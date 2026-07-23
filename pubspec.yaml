@@ -1,0 +1,61 @@
+name: coachfit
+description: "CoachFit — an offline-first personal fitness coach with habit tracking, XP progression, and on-device camera-based rep counting."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management — lets widgets "watch" data and rebuild automatically
+  flutter_riverpod: ^2.5.1
+
+  # Navigation / routing between screens
+  go_router: ^14.2.0
+
+  # Local storage (offline-first, no backend server required)
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  shared_preferences: ^2.2.3
+
+  # Typography & UI polish
+  google_fonts: ^6.2.1
+  flutter_animate: ^4.5.0
+  percent_indicator: ^4.2.3
+  shimmer: ^3.0.0
+
+  # Charts for the stats/progress screens (used in a later phase)
+  fl_chart: ^0.68.0
+
+  # Local notifications (habit/workout reminders, later phase)
+  flutter_local_notifications: ^17.2.2
+  timezone: ^0.9.4
+
+  # On-device pose detection for camera workouts (later phase)
+  google_mlkit_pose_detection: ^0.12.0
+  camera: ^0.11.0+2
+
+  # Utilities
+  uuid: ^4.4.0
+  intl: ^0.19.0
+  equatable: ^2.0.5
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.11
+
+flutter:
+  uses-material-design: true
+
+  # Referenced asset folder — must exist (even with just a placeholder
+  # file inside) or the build fails.
+  assets:
+    - assets/images/
