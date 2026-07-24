@@ -2,35 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 /// The persistent bottom-navigation shell wrapping all 5 main tabs.
-/// go_router's StatefulShellRoute keeps each tab's own navigation
-/// stack and scroll position alive when you switch tabs and back —
-/// exactly like how Instagram/Spotify tabs remember where you were.
+/// `child` is whatever screen the current route resolves to; we figure
+/// out which tab is "selected" by checking the current URL location.
 class AppShell extends StatelessWidget {
-  const AppShell({super.key, required this.navigationShell});
+  const AppShell({super.key, required this.child});
 
-  final StatefulNavigationShell navigationShell;
+  final Widget child;
 
-  // Record-type list defining each tab's icon + label in one place
   static const _tabs = [
-    (icon: Icons.home_rounded, label: 'Home'),
-    (icon: Icons.fitness_center_rounded, label: 'Workout'),
-    (icon: Icons.checklist_rounded, label: 'Habits'),
-    (icon: Icons.bar_chart_rounded, label: 'Stats'),
-    (icon: Icons.person_rounded, label: 'Profile'),
+    (icon: Icons.home_rounded, label: 'Home', path: '/dashboard'),
+    (icon: Icons.fitness_center_rounded, label: 'Workout', path: '/workout'),
+    (icon: Icons.checklist_rounded, label: 'Habits', path: '/habits'),
+    (icon: Icons.bar_chart_rounded, label: 'Stats', path: '/stats'),
+    (icon: Icons.person_rounded, label: 'Profile', path: '/profile'),
   ];
+
+  int _currentIndex(BuildContext context) {
+    final location = GoRouterState.of(context).matchedLocation;
+    final index = _tabs.indexWhere((t) => location.startsWith(t.path));
+    return index == -1 ? 0 : index;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: navigationShell, // shows whichever tab is currently active
+      body: child,
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: navigationShell.currentIndex,
-        onTap: (index) => navigationShell.goBranch(
-          index,
-          // Tapping the already-active tab resets it to its root screen
-          initialLocation: index == navigationShell.currentIndex,
-        ),
-        items: _tabs.map((t) => BottomNavigationBarItem(icon: Icon(t.icon), label: t.label)).toList(),
+        currentIndex: _currentIndex(context),
+        onTap: (index) => context.go(_tabs[index].path),
+        items: _tabs
+            .map((t) => BottomNavigationBarItem(icon: Icon(t.icon), label: t.label))
+            .toList(),
       ),
     );
   }
