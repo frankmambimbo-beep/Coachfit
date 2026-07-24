@@ -34,9 +34,11 @@ dependencies:
   flutter_local_notifications: ^17.2.2
   timezone: ^0.9.4
 
-  # On-device pose detection for camera workouts (later phase)
-  google_mlkit_pose_detection: ^0.12.0
-  camera: ^0.11.0+2
+  # NOTE: camera / google_mlkit_pose_detection are intentionally left
+  # out for now. They pull in native Android/Kotlin code that needs
+  # extra Gradle configuration we haven't set up yet, and this app
+  # doesn't use them until the camera-workout phase. They'll be added
+  # back in that phase along with the matching Gradle changes.
 
   # Utilities
   uuid: ^4.4.0
