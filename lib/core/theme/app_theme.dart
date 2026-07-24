@@ -33,10 +33,17 @@ class AppTheme {
         centerTitle: false,
         titleTextStyle: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
       ),
-      cardTheme: CardThemeData(
+      // NOTE: Flutter 3.24 (the version this project builds with) uses
+      // the class name "CardTheme" here. Newer Flutter versions renamed
+      // it to "CardThemeData" — using that name on 3.24 causes a build
+      // error ("Method not found: CardThemeData"), which is why this
+      // is CardTheme instead.
+      cardTheme: CardTheme(
         color: AppColors.surfaceElevated,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
         margin: EdgeInsets.zero,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -71,9 +78,4 @@ class AppTheme {
         selectedItemColor: AppColors.accentPrimary,
         unselectedItemColor: AppColors.textMuted,
         showUnselectedLabels: true,
-        type: BottomNavigationBarType.fixed,
-      ),
-      dividerTheme: DividerThemeData(color: AppColors.glassBorder, thickness: 1),
-    );
-  }
-}
+        type: BottomNavigationBarTyp
