@@ -25,12 +25,19 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
 
-      # --project-name is added explicitly because Flutter tries to
-      # guess the name from the repo's folder name, which may contain
-      # capital letters or other characters that aren't valid Dart
-      # package names (must be lowercase_with_underscores).
+      # Generates the missing android/ folder (Gradle project,
+      # manifest, etc.) fresh on every build, since we don't have
+      # Flutter installed locally to run this ourselves.
       - name: Generate missing platform folders
         run: flutter create --platforms=android --project-name=coachfit --org com.coachfit .
+
+      # Fix: some of our plugins need a newer Kotlin plugin version
+      # than what Flutter's default template ships with. This finds
+      # the Kotlin version line in the generated settings.gradle and
+      # bumps it to 1.9.22.
+      - name: Patch Kotlin version
+        run: |
+          sed -i 's/org.jetbrains.kotlin.android" version "[0-9.]*"/org.jetbrains.kotlin.android" version "1.9.22"/' android/settings.gradle
 
       - name: Install dependencies
         run: flutter pub get
