@@ -1,4 +1,3 @@
-# GitHub Actions workflow: builds a debug APK every time you push code.
 name: Build Android APK
 
 on:
@@ -26,13 +25,12 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
 
-      # This is the fix: generates the missing android/ folder (Gradle
-      # project, manifest, etc.) right here in CI, since we don't have
-      # Flutter installed locally to run this ourselves. It's safe to
-      # run on an existing project — it only fills in missing platform
-      # folders and won't touch our lib/ code or pubspec.yaml.
+      # --project-name is added explicitly because Flutter tries to
+      # guess the name from the repo's folder name, which may contain
+      # capital letters or other characters that aren't valid Dart
+      # package names (must be lowercase_with_underscores).
       - name: Generate missing platform folders
-        run: flutter create --platforms=android --org com.coachfit .
+        run: flutter create --platforms=android --project-name=coachfit --org com.coachfit .
 
       - name: Install dependencies
         run: flutter pub get
