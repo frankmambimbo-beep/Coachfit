@@ -9,12 +9,15 @@ import '../../features/habits/presentation/habits_screen.dart';
 import '../../features/habits/presentation/add_habit_screen.dart';
 import '../../features/stats/presentation/stats_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
+import '../../features/profile/domain/user_profile.dart';
 import 'app_shell.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
   redirect: (context, state) {
-    final box = Hive.box('profileBox');
+    // Must match the type used in main.dart's Hive.openBox<UserProfile>(...)
+    // exactly, or Hive throws a "box already open with different type" error.
+    final box = Hive.box<UserProfile>('profileBox');
     final hasProfile = box.isNotEmpty;
     final onboarding = state.matchedLocation == '/' ||
         state.matchedLocation == '/onboarding';
