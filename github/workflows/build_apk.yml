@@ -1,0 +1,48 @@
+# GitHub Actions workflow: builds a debug APK every time you push code.
+# Go to the "Actions" tab in your repo after pushing to watch it run,
+# then download the APK from the workflow run's "Artifacts" section.
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # lets you manually trigger a build from the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Downloads your repo's code onto the build machine
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Installs Java, required by the Android build tools
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Installs the Flutter SDK on the build machine
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+
+      # Downloads all the packages listed in pubspec.yaml
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Builds the actual APK file
+      - name: Build APK
+        run: flutter build apk --debug
+
+      # Uploads the finished APK so you can download it from the
+      # "Artifacts" section of this workflow run in the Actions tab
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: coachfit-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
