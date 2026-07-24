@@ -1,0 +1,5 @@
+This empty file exists only so the assets/images folder is tracked by git.
+pubspec.yaml references this folder as an asset directory — Flutter's
+build fails if a declared asset folder doesn't exist, so this placeholder
+keeps the build working until you add real images.
+
