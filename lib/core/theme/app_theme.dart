@@ -11,9 +11,9 @@ class AppTheme {
   static ThemeData get dark {
     final base = ThemeData.dark(useMaterial3: true);
 
-    // google_fonts fetches/caches the font at runtime, so we don't need
-    // to bundle font files ourselves.
-    final textTheme = GoogleFonts.soraTextTheme(base.textTheme).apply(
+    final textTheme = GoogleFonts.soraTextTheme(
+      base.textTheme,
+    ).apply(
       bodyColor: AppColors.textPrimary,
       displayColor: AppColors.textPrimary,
     );
@@ -31,13 +31,10 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
       ),
-      // NOTE: Flutter 3.24 (the version this project builds with) uses
-      // the class name "CardTheme" here. Newer Flutter versions renamed
-      // it to "CardThemeData" — using that name on 3.24 causes a build
-      // error ("Method not found: CardThemeData"), which is why this
-      // is CardTheme instead.
       cardTheme: CardTheme(
         color: AppColors.surfaceElevated,
         elevation: 0,
@@ -50,9 +47,13 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.accentPrimary,
           foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(56), // big, easy-to-tap buttons
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.pill)),
-          textStyle: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          minimumSize: const Size.fromHeight(56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+          ),
+          textStyle: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -60,13 +61,18 @@ class AppTheme {
           foregroundColor: AppColors.textPrimary,
           side: BorderSide(color: AppColors.glassBorder),
           minimumSize: const Size.fromHeight(56),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.pill)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceElevated,
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: BorderSide.none,
@@ -78,4 +84,12 @@ class AppTheme {
         selectedItemColor: AppColors.accentPrimary,
         unselectedItemColor: AppColors.textMuted,
         showUnselectedLabels: true,
-        type: BottomNavigationBarTyp
+        type: BottomNavigationBarType.fixed,
+      ),
+      dividerTheme: DividerThemeData(
+        color: AppColors.glassBorder,
+        thickness: 1,
+      ),
+    );
+  }
+}
