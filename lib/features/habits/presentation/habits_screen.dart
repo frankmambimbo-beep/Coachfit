@@ -47,8 +47,10 @@ class HabitsScreen extends ConsumerWidget {
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  ...dueToday
-                      .map((h) => _HabitTile(habit: h, icon: _iconFor(h.category))),
+                  ...dueToday.map((h) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _HabitTile(habit: h, icon: _iconFor(h.category)),
+                      )),
                   const SizedBox(height: 24),
                 ],
                 if (notDueToday.isNotEmpty) ...[
@@ -56,8 +58,10 @@ class HabitsScreen extends ConsumerWidget {
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  ...notDueToday
-                      .map((h) => _HabitTile(habit: h, icon: _iconFor(h.category))),
+                  ...notDueToday.map((h) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _HabitTile(habit: h, icon: _iconFor(h.category)),
+                      )),
                 ],
               ],
             ),
@@ -76,13 +80,13 @@ class _HabitTile extends ConsumerWidget {
     final done = habit.isCompletedToday;
 
     return GlassCard(
-      margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: done
-              ? AppColors.mint.withOpacity(0.2)
-              : AppColors.violet.withOpacity(0.15),
-          child: Icon(icon, color: done ? AppColors.mint : AppColors.violet),
+              ? AppColors.accentTertiary.withOpacity(0.2)
+              : AppColors.accentPrimary.withOpacity(0.15),
+          child: Icon(icon,
+              color: done ? AppColors.accentTertiary : AppColors.accentPrimary),
         ),
         title:
             Text(habit.name, style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -91,7 +95,7 @@ class _HabitTile extends ConsumerWidget {
         trailing: IconButton(
           icon: Icon(
             done ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: done ? AppColors.mint : Colors.grey,
+            color: done ? AppColors.accentTertiary : Colors.grey,
             size: 32,
           ),
           onPressed: () {
