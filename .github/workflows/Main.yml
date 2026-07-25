@@ -25,25 +25,35 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
 
-      # Generates the missing android/ folder (Gradle project,
-      # manifest, etc.) fresh on every build, since we don't have
-      # Flutter installed locally to run this ourselves.
       - name: Generate missing platform folders
         run: flutter create --platforms=android --project-name=coachfit --org com.coachfit .
 
-      # Fix: some of our plugins need a newer Kotlin plugin version
-      # than what Flutter's default template ships with. This finds
-      # the Kotlin version line in the generated settings.gradle and
-      # bumps it to 1.9.22.
       - name: Patch Kotlin version
         run: |
           sed -i 's/org.jetbrains.kotlin.android" version "[0-9.]*"/org.jetbrains.kotlin.android" version "1.9.22"/' android/settings.gradle
 
+      # Fix: repo.maven.apache.org sometimes returns 403 Forbidden to
+      # GitHub Actions' shared IP ranges (a known, usually transient,
+      # rate-limiting issue on Apache's end, not something wrong with
+      # our project). This inserts Google's Maven Central mirror as an
+      # extra source Gradle can pull from if Apache's repo is blocking.
+      - name: Add Maven Central mirror as fallback
+        run: |
+          sed -i "s#mavenCentral()#maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }\n        mavenCentral()#g" android/settings.gradle
+
       - name: Install dependencies
         run: flutter pub get
 
+      # Retries the build up to 3 times in case of another transient
+      # network failure, instead of failing the whole workflow on the
+      # first hiccup.
       - name: Build APK
-        run: flutter build apk --debug
+        run: |
+          for i in 1 2 3; do
+            flutter build apk --debug && break
+            echo "Build attempt $i failed, retrying in 15s..."
+            sleep 15
+          done
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
