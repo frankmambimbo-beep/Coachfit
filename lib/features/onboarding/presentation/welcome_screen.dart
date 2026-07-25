@@ -46,7 +46,6 @@ class WelcomeScreen extends StatelessWidget {
                 ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.2, end: 0),
                 const Spacer(flex: 2),
                 ElevatedButton(
-                  // Router only defines '/onboarding', not '/onboarding/profile'
                   onPressed: () => context.go('/onboarding'),
                   child: const Text('Create Account'),
                 ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.3, end: 0),
