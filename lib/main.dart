@@ -6,6 +6,8 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/profile/domain/user_profile.dart';
 import 'features/habits/domain/habit.dart';
+import 'features/goals/domain/goal.dart';
+import 'features/challenges/domain/challenge.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,8 +24,18 @@ void main() async {
   Hive.registerAdapter(HabitCategoryAdapter());
   Hive.registerAdapter(HabitFrequencyAdapter());
 
+  // Goal adapters (Phase 3)
+  Hive.registerAdapter(GoalAdapter());
+  Hive.registerAdapter(GoalCategoryAdapter());
+
+  // Challenge adapters (Phase 3)
+  Hive.registerAdapter(ChallengeAdapter());
+  Hive.registerAdapter(ChallengeCategoryAdapter());
+
   await Hive.openBox<UserProfile>('profileBox');
   await Hive.openBox<Habit>('habitsBox');
+  await Hive.openBox<Goal>('goalsBox');
+  await Hive.openBox<Challenge>('challengesBox');
 
   runApp(const ProviderScope(child: CoachFitApp()));
 }
