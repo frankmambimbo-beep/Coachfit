@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/progress_ring.dart';
 import '../../profile/data/profile_repository.dart';
+import '../../habits/data/habits_repository.dart';
+import '../../habits/domain/habit.dart';
 
-/// The daily home dashboard (the "Home" tab). Right now this renders
-/// the real profile data (name, level, XP, streak) wired to Hive, plus
-/// clearly-labeled placeholder cards for sections that later phases
-/// will build out (habits, workout-of-the-day, water, goals, mood).
+/// The daily home dashboard. Real profile (name, level, XP, streak) and
+/// real today's-habits are wired to Hive. Sections owned by later phases
+/// (workout-of-the-day, water, goals, mood) remain clearly marked
+/// placeholders so nothing here is mistaken for finished functionality.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ref.watch rebuilds this widget automatically whenever the
-    // profile changes anywhere in the app (e.g. after gaining XP).
     final profile = ref.watch(profileRepositoryProvider);
 
     if (profile == null) {
-      // Shouldn't normally happen (router redirects to onboarding first)
-      // but guards against a null profile during the first frame.
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
@@ -75,18 +74,31 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             const _DailyQuoteCard(),
             const SizedBox(height: AppSpacing.md),
-            // These sections are placeholders until their respective
-            // phases are built — clearly labeled so nothing is mistaken
-            // for finished functionality.
-            _SectionPlaceholder(title: "Today's Habits", subtitle: 'Habit tracking arrives in Phase 3', icon: Icons.check_circle_outline),
+            const _TodayHabitsCard(),
             const SizedBox(height: AppSpacing.md),
-            _SectionPlaceholder(title: "Today's Workout", subtitle: 'Workout plans arrive in Phase 5', icon: Icons.fitness_center_outlined),
+            _SectionPlaceholder(
+              title: "Today's Workout",
+              subtitle: 'Workout plans arrive in Phase 5',
+              icon: Icons.fitness_center_outlined,
+            ),
             const SizedBox(height: AppSpacing.md),
-            _SectionPlaceholder(title: 'Water Intake', subtitle: 'Nutrition tracking arrives in Phase 7', icon: Icons.water_drop_outlined),
+            _SectionPlaceholder(
+              title: 'Water Intake',
+              subtitle: 'Nutrition tracking arrives in Phase 7',
+              icon: Icons.water_drop_outlined,
+            ),
             const SizedBox(height: AppSpacing.md),
-            _SectionPlaceholder(title: 'Goals in Progress', subtitle: 'Goal tracking arrives in Phase 4', icon: Icons.flag_outlined),
+            _SectionPlaceholder(
+              title: 'Goals in Progress',
+              subtitle: 'Goal tracking arrives in Phase 4',
+              icon: Icons.flag_outlined,
+            ),
             const SizedBox(height: AppSpacing.md),
-            _SectionPlaceholder(title: 'Mood Summary', subtitle: 'Mood & journal arrive in Phase 7', icon: Icons.mood_outlined),
+            _SectionPlaceholder(
+              title: 'Mood Summary',
+              subtitle: 'Mood & journal arrive in Phase 7',
+              icon: Icons.mood_outlined,
+            ),
           ],
         ),
       ),
@@ -102,7 +114,10 @@ class _StreakBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-      decoration: BoxDecoration(gradient: AppColors.primaryGradient, borderRadius: BorderRadius.circular(AppRadius.pill)),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -120,8 +135,6 @@ class _TodayProgressCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Hardcoded at 0% for now — will be calculated from real habits/
-    // workout/goal completion once those features exist.
     const double todayProgress = 0.0;
     return GlassCard(
       child: Row(
@@ -150,21 +163,108 @@ class _DailyQuoteCard extends StatelessWidget {
 
   static const List<String> _quotes = [
     'Discipline is choosing between what you want now and what you want most.',
-    'Small steps every day lead to big results over time.',
-    "You don't have to be extreme, just consistent.",
+    "Small steps every day lead to big results over time.",
+    'You don\'t have to be extreme, just consistent.',
     'The body achieves what the mind believes.',
   ];
 
   @override
   Widget build(BuildContext context) {
-    // Picks a different quote each day based on the day of month
     final quote = _quotes[DateTime.now().day % _quotes.length];
     return GlassCard(
       child: Row(
         children: [
           const Icon(Icons.format_quote_rounded, color: AppColors.accentTertiary),
           const SizedBox(width: AppSpacing.md),
-          Expanded(child: Text(quote, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic))),
+          Expanded(
+            child: Text(quote, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Real "Today's Habits" card — replaces the old Phase 1 placeholder.
+/// Shows up to 3 habits due today with a quick-complete checkbox, or an
+/// empty/all-done state, plus a link into the full Habits tab.
+class _TodayHabitsCard extends ConsumerWidget {
+  const _TodayHabitsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final habits = ref.watch(habitsRepositoryProvider);
+    final dueToday = habits.where((h) => h.isDueToday).toList();
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.check_circle_outline, color: AppColors.textMuted),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text("Today's Habits",
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              ),
+              TextButton(
+                onPressed: () => context.go('/habits'),
+                child: const Text('View all'),
+              ),
+            ],
+          ),
+          if (dueToday.isEmpty) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text('No habits due today. Add one from the Habits tab.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
+          ] else ...[
+            const SizedBox(height: AppSpacing.sm),
+            ...dueToday.take(3).map((h) => _HabitRow(habit: h)),
+            if (dueToday.length > 3)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Text('+${dueToday.length - 3} more due today',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HabitRow extends ConsumerWidget {
+  const _HabitRow({required this.habit});
+  final Habit habit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final done = habit.isCompletedToday;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => ref.read(habitsRepositoryProvider.notifier).toggleCompletionToday(habit.id),
+            child: Icon(
+              done ? Icons.check_circle : Icons.radio_button_unchecked,
+              color: done ? AppColors.accentTertiary : AppColors.textMuted,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              habit.name,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    decoration: done ? TextDecoration.lineThrough : null,
+                    color: done ? AppColors.textMuted : null,
+                  ),
+            ),
+          ),
+          Text('+${habit.xpReward} XP',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
         ],
       ),
     );
