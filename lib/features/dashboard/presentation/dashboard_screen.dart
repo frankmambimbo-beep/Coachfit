@@ -8,11 +8,12 @@ import '../../../core/widgets/progress_ring.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../habits/data/habits_repository.dart';
 import '../../habits/domain/habit.dart';
+import '../../goals/data/goals_repository.dart';
+import '../../challenges/data/challenges_repository.dart';
 
-/// The daily home dashboard. Real profile (name, level, XP, streak) and
-/// real today's-habits are wired to Hive. Sections owned by later phases
-/// (workout-of-the-day, water, goals, mood) remain clearly marked
-/// placeholders so nothing here is mistaken for finished functionality.
+/// The daily home dashboard. Real profile, today's-habits, goals, and
+/// challenges are wired to Hive. Sections owned by later phases
+/// (workout-of-the-day, water, mood) remain clearly marked placeholders.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -76,6 +77,10 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             const _TodayHabitsCard(),
             const SizedBox(height: AppSpacing.md),
+            const _GoalsSummaryCard(),
+            const SizedBox(height: AppSpacing.md),
+            const _ChallengesSummaryCard(),
+            const SizedBox(height: AppSpacing.md),
             _SectionPlaceholder(
               title: "Today's Workout",
               subtitle: 'Workout plans arrive in Phase 5',
@@ -86,12 +91,6 @@ class DashboardScreen extends ConsumerWidget {
               title: 'Water Intake',
               subtitle: 'Nutrition tracking arrives in Phase 7',
               icon: Icons.water_drop_outlined,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SectionPlaceholder(
-              title: 'Goals in Progress',
-              subtitle: 'Goal tracking arrives in Phase 4',
-              icon: Icons.flag_outlined,
             ),
             const SizedBox(height: AppSpacing.md),
             _SectionPlaceholder(
@@ -185,9 +184,6 @@ class _DailyQuoteCard extends StatelessWidget {
   }
 }
 
-/// Real "Today's Habits" card — replaces the old Phase 1 placeholder.
-/// Shows up to 3 habits due today with a quick-complete checkbox, or an
-/// empty/all-done state, plus a link into the full Habits tab.
 class _TodayHabitsCard extends ConsumerWidget {
   const _TodayHabitsCard();
 
@@ -265,6 +261,85 @@ class _HabitRow extends ConsumerWidget {
           ),
           Text('+${habit.xpReward} XP',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Real "Goals" summary — replaces the old Phase 1 placeholder. Tapping
+/// anywhere on the card opens the full Goals tab.
+class _GoalsSummaryCard extends ConsumerWidget {
+  const _GoalsSummaryCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final goals = ref.watch(goalsRepositoryProvider);
+    final active = goals.where((g) => !g.completed).toList();
+
+    return GlassCard(
+      onTap: () => context.go('/goals'),
+      child: Row(
+        children: [
+          const Icon(Icons.flag_outlined, color: AppColors.textMuted),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Goals in Progress',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(
+                  active.isEmpty
+                      ? 'No active goals — tap to set one'
+                      : '${active.length} active · closest: ${(active..sort((a, b) => b.progress.compareTo(a.progress))).first.title}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right, color: AppColors.textMuted),
+        ],
+      ),
+    );
+  }
+}
+
+/// Real "Challenges" summary card, new in Phase 3 (no Phase 1 placeholder
+/// existed for this since Challenges wasn't planned as a dashboard slot
+/// yet). Tapping opens the full Challenges tab.
+class _ChallengesSummaryCard extends ConsumerWidget {
+  const _ChallengesSummaryCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final challenges = ref.watch(challengesRepositoryProvider);
+    final active = challenges.where((c) => !c.completed && !c.isExpired).toList();
+
+    return GlassCard(
+      onTap: () => context.go('/challenges'),
+      child: Row(
+        children: [
+          const Icon(Icons.emoji_events_outlined, color: AppColors.textMuted),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Challenges',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(
+                  active.isEmpty
+                      ? 'Join a challenge to build momentum'
+                      : '${active.length} active — tap to check in',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right, color: AppColors.textMuted),
         ],
       ),
     );
