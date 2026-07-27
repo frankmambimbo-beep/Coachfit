@@ -7,6 +7,9 @@ import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/workout/presentation/workout_screen.dart';
 import '../../features/habits/presentation/habits_screen.dart';
 import '../../features/habits/presentation/add_habit_screen.dart';
+import '../../features/goals/presentation/goals_screen.dart';
+import '../../features/goals/presentation/add_goal_screen.dart';
+import '../../features/challenges/presentation/challenges_screen.dart';
 import '../../features/stats/presentation/stats_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/profile/domain/user_profile.dart';
@@ -15,8 +18,6 @@ import 'app_shell.dart';
 final appRouter = GoRouter(
   initialLocation: '/',
   redirect: (context, state) {
-    // Must match the type used in main.dart's Hive.openBox<UserProfile>(...)
-    // exactly, or Hive throws a "box already open with different type" error.
     final box = Hive.box<UserProfile>('profileBox');
     final hasProfile = box.isNotEmpty;
     final onboarding = state.matchedLocation == '/' ||
@@ -49,6 +50,18 @@ final appRouter = GoRouter(
                 builder: (context, state) => const AddHabitScreen()),
           ],
         ),
+        GoRoute(
+          path: '/goals',
+          builder: (context, state) => const GoalsScreen(),
+          routes: [
+            GoRoute(
+                path: 'add',
+                builder: (context, state) => const AddGoalScreen()),
+          ],
+        ),
+        GoRoute(
+            path: '/challenges',
+            builder: (context, state) => const ChallengesScreen()),
         GoRoute(
             path: '/stats', builder: (context, state) => const StatsScreen()),
         GoRoute(
