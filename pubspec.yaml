@@ -10,37 +10,30 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # State management — lets widgets "watch" data and rebuild automatically
   flutter_riverpod: ^2.5.1
-
-  # Navigation / routing between screens
   go_router: ^14.2.0
 
-  # Local storage (offline-first, no backend server required)
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   shared_preferences: ^2.2.3
 
-  # Typography & UI polish
   google_fonts: ^6.2.1
   flutter_animate: ^4.5.0
   percent_indicator: ^4.2.3
   shimmer: ^3.0.0
 
-  # Charts for the stats/progress screens (used in a later phase)
   fl_chart: ^0.68.0
 
-  # Local notifications (habit/workout reminders, later phase)
   flutter_local_notifications: ^17.2.2
   timezone: ^0.9.4
 
-  # NOTE: camera / google_mlkit_pose_detection are intentionally left
-  # out for now. They pull in native Android/Kotlin code that needs
-  # extra Gradle configuration we haven't set up yet, and this app
-  # doesn't use them until the camera-workout phase. They'll be added
-  # back in that phase along with the matching Gradle changes.
+  # Phase 5, Stage A: camera preview only. Pose detection
+  # (google_mlkit_pose_detection) is intentionally NOT added yet —
+  # it broke the build once already when combined with camera. Adding
+  # it separately, later, once this stage is confirmed stable, makes
+  # it obvious which package is at fault if something breaks again.
+  camera: ^0.11.0+2
 
-  # Utilities
   uuid: ^4.4.0
   intl: ^0.19.0
   equatable: ^2.0.5
@@ -56,8 +49,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  # Referenced asset folder — must exist (even with just a placeholder
-  # file inside) or the build fails.
   assets:
     - assets/images/
