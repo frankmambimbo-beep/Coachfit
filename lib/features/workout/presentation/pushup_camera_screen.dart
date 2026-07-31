@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
@@ -46,9 +47,6 @@ class _PushupCameraScreenState extends ConsumerState<PushupCameraScreen> {
         orElse: () => cameras.first,
       );
 
-      // NV21 is requested explicitly because it's the one raw format
-      // ML Kit's InputImage.fromBytes accepts directly on Android
-      // without extra plane-merging logic.
       final controller = CameraController(
         camera,
         ResolutionPreset.medium,
@@ -75,9 +73,6 @@ class _PushupCameraScreenState extends ConsumerState<PushupCameraScreen> {
     _streaming = true;
 
     await _controller!.startImageStream((CameraImage image) async {
-      // Drop frames while the previous one is still being processed —
-      // ML Kit inference takes longer than the camera's frame rate, so
-      // without this the queue backs up and the UI stutters badly.
       if (_isProcessingFrame) return;
       _isProcessingFrame = true;
 
