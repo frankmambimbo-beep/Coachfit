@@ -27,12 +27,13 @@ dependencies:
   flutter_local_notifications: ^17.2.2
   timezone: ^0.9.4
 
-  # Phase 5, Stage A: camera preview only. Pose detection
-  # (google_mlkit_pose_detection) is intentionally NOT added yet —
-  # it broke the build once already when combined with camera. Adding
-  # it separately, later, once this stage is confirmed stable, makes
-  # it obvious which package is at fault if something breaks again.
-  camera: ^0.11.0+2
+  # Pinned to 0.10.6 — versions 0.11.0+ switched the default Android
+  # implementation to camera_android_camerax, which pulls in
+  # androidx.camera 1.4.1 and fails to dex on this older toolchain
+  # (a known, currently open Flutter bug: flutter/flutter#160815).
+  # 0.10.6 uses the older camera_android implementation instead, which
+  # talks to Android's Camera2 API directly with no CameraX involved.
+  camera: 0.10.6
 
   uuid: ^4.4.0
   intl: ^0.19.0
