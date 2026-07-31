@@ -37,19 +37,40 @@ class WorkoutScreen extends ConsumerWidget {
         onPressed: () => context.push('/workout/add'),
         child: const Icon(Icons.add),
       ),
-      body: sessions.isEmpty
-          ? _EmptyState(onAdd: () => context.push('/workout/add'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: sessions.length,
-              itemBuilder: (context, index) {
-                final s = sessions[index];
-                return Padding(
+      body: ListView(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        children: [
+          // TEMPORARY — Phase 5 Stage A entry point. Remove once real
+          // rep-counting UI replaces this manual test button.
+          GlassCard(
+            onTap: () => context.push('/workout/camera-test'),
+            child: Row(
+              children: [
+                const Icon(Icons.videocam, color: AppColors.accentSecondary),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Text(
+                    'Test Camera (Phase 5)',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.textMuted),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (sessions.isEmpty)
+            _EmptyState(onAdd: () => context.push('/workout/add'))
+          else
+            ...sessions.map((s) => Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                   child: _SessionTile(session: s, icon: _iconFor(s.type)),
-                );
-              },
-            ),
+                )),
+        ],
+      ),
     );
   }
 }
