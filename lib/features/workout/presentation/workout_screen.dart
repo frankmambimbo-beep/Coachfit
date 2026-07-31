@@ -40,21 +40,31 @@ class WorkoutScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
-          // TEMPORARY — Phase 5 Stage A entry point. Remove once real
-          // rep-counting UI replaces this manual test button.
           GlassCard(
-            onTap: () => context.push('/workout/camera-test'),
+            onTap: () => context.push('/workout/pushups'),
             child: Row(
               children: [
                 const Icon(Icons.videocam, color: AppColors.accentSecondary),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: Text(
-                    'Test Camera (Phase 5)',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Push-up Counter',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        'Camera-tracked reps, auto-logged',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AppColors.textMuted),
+                      ),
+                    ],
                   ),
                 ),
                 const Icon(Icons.chevron_right, color: AppColors.textMuted),
