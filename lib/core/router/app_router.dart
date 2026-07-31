@@ -5,6 +5,7 @@ import '../../features/onboarding/presentation/welcome_screen.dart';
 import '../../features/onboarding/presentation/profile_setup_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/workout/presentation/workout_screen.dart';
+import '../../features/workout/presentation/add_workout_screen.dart';
 import '../../features/habits/presentation/habits_screen.dart';
 import '../../features/habits/presentation/add_habit_screen.dart';
 import '../../features/goals/presentation/goals_screen.dart';
@@ -39,8 +40,14 @@ final appRouter = GoRouter(
             path: '/dashboard',
             builder: (context, state) => const DashboardScreen()),
         GoRoute(
-            path: '/workout',
-            builder: (context, state) => const WorkoutScreen()),
+          path: '/workout',
+          builder: (context, state) => const WorkoutScreen(),
+          routes: [
+            GoRoute(
+                path: 'add',
+                builder: (context, state) => const AddWorkoutScreen()),
+          ],
+        ),
         GoRoute(
           path: '/habits',
           builder: (context, state) => const HabitsScreen(),
