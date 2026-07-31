@@ -36,16 +36,11 @@ jobs:
         run: |
           sed -i "s#mavenCentral()#maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }\n        mavenCentral()#g" android/settings.gradle
 
-      # Fix: the camera plugin needs Java 8+ core library desugaring
-      # enabled, or Gradle fails while dexing its newer AAR files.
-      # This is Google's own documented fix for this exact issue.
       - name: Enable core library desugaring for camera plugin
         run: |
           sed -i '/targetCompatibility = JavaVersion.VERSION_1_8/a\        coreLibraryDesugaringEnabled true' android/app/build.gradle
           sed -i "s/dependencies {}/dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\n}/" android/app/build.gradle
 
-      # Camera access requires this permission declared in the manifest,
-      # or the app crashes the moment it tries to open the camera.
       - name: Add camera permission to manifest
         run: |
           sed -i '/<manifest xmlns:android=/a\    <uses-permission android:name="android.permission.CAMERA"/>' android/app/src/main/AndroidManifest.xml
@@ -53,13 +48,26 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # Fixed: the previous version of this retry loop always exited
+      # successfully even if every attempt failed, because its last
+      # command was just an echo. Now it explicitly fails the whole
+      # step (exit 1) if the build never succeeds after 3 tries, so
+      # a real error shows up in the log instead of a false "Success".
       - name: Build APK
         run: |
+          success=false
           for i in 1 2 3; do
-            flutter build apk --debug && break
+            if flutter build apk --debug; then
+              success=true
+              break
+            fi
             echo "Build attempt $i failed, retrying in 15s..."
             sleep 15
           done
+          if [ "$success" = false ]; then
+            echo "All build attempts failed."
+            exit 1
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
