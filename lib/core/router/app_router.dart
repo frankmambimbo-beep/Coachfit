@@ -6,7 +6,7 @@ import '../../features/onboarding/presentation/profile_setup_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/workout/presentation/workout_screen.dart';
 import '../../features/workout/presentation/add_workout_screen.dart';
-import '../../features/workout/presentation/camera_preview_screen.dart';
+import '../../features/workout/presentation/pushup_camera_screen.dart';
 import '../../features/habits/presentation/habits_screen.dart';
 import '../../features/habits/presentation/add_habit_screen.dart';
 import '../../features/goals/presentation/goals_screen.dart';
@@ -48,8 +48,8 @@ final appRouter = GoRouter(
                 path: 'add',
                 builder: (context, state) => const AddWorkoutScreen()),
             GoRoute(
-                path: 'camera-test',
-                builder: (context, state) => const CameraPreviewScreen()),
+                path: 'pushups',
+                builder: (context, state) => const PushupCameraScreen()),
           ],
         ),
         GoRoute(
