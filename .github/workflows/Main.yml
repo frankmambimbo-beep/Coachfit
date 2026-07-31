@@ -36,10 +36,15 @@ jobs:
         run: |
           sed -i "s#mavenCentral()#maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }\n        mavenCentral()#g" android/settings.gradle
 
+      # Fixed: previous sed looked for a literal empty "dependencies {}"
+      # which doesn't match Flutter's generated build.gradle format, so
+      # the desugaring library was never actually added even though the
+      # "enabled true" flag was. Now inserts right after the
+      # "dependencies {" line instead, which always matches.
       - name: Enable core library desugaring for camera plugin
         run: |
           sed -i '/targetCompatibility = JavaVersion.VERSION_1_8/a\        coreLibraryDesugaringEnabled true' android/app/build.gradle
-          sed -i "s/dependencies {}/dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\n}/" android/app/build.gradle
+          sed -i '/^dependencies {/a\    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.4"' android/app/build.gradle
 
       - name: Add camera permission to manifest
         run: |
@@ -48,11 +53,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Fixed: the previous version of this retry loop always exited
-      # successfully even if every attempt failed, because its last
-      # command was just an echo. Now it explicitly fails the whole
-      # step (exit 1) if the build never succeeds after 3 tries, so
-      # a real error shows up in the log instead of a false "Success".
       - name: Build APK
         run: |
           success=false
