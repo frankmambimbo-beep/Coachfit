@@ -36,24 +36,9 @@ jobs:
         run: |
           sed -i "s#mavenCentral()#maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }\n        mavenCentral()#g" android/settings.gradle
 
-      # Fixed: desugar_jdk_libs 2.1.4 uses a newer spec format ("200")
-      # than the D8 compiler bundled with this older Flutter/AGP
-      # toolchain understands ("100"), causing a JSON parsing crash.
-      # 1.2.2 uses the older, compatible spec format.
-      - name: Enable core library desugaring for camera plugin
-        run: |
-          sed -i '/compileOptions {/a\        coreLibraryDesugaringEnabled true' android/app/build.gradle
-          echo "" >> android/app/build.gradle
-          echo "dependencies {" >> android/app/build.gradle
-          echo "    coreLibraryDesugaring \"com.android.tools:desugar_jdk_libs:1.2.2\"" >> android/app/build.gradle
-          echo "}" >> android/app/build.gradle
-
       - name: Add camera permission to manifest
         run: |
           sed -i '/<manifest xmlns:android=/a\    <uses-permission android:name="android.permission.CAMERA"/>' android/app/src/main/AndroidManifest.xml
-
-      - name: Show patched build.gradle
-        run: cat android/app/build.gradle
 
       - name: Install dependencies
         run: flutter pub get
