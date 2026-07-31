@@ -32,21 +32,27 @@ jobs:
         run: |
           sed -i 's/org.jetbrains.kotlin.android" version "[0-9.]*"/org.jetbrains.kotlin.android" version "1.9.22"/' android/settings.gradle
 
-      # Fix: repo.maven.apache.org sometimes returns 403 Forbidden to
-      # GitHub Actions' shared IP ranges (a known, usually transient,
-      # rate-limiting issue on Apache's end, not something wrong with
-      # our project). This inserts Google's Maven Central mirror as an
-      # extra source Gradle can pull from if Apache's repo is blocking.
       - name: Add Maven Central mirror as fallback
         run: |
           sed -i "s#mavenCentral()#maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }\n        mavenCentral()#g" android/settings.gradle
 
+      # Fix: the camera plugin needs Java 8+ core library desugaring
+      # enabled, or Gradle fails while dexing its newer AAR files.
+      # This is Google's own documented fix for this exact issue.
+      - name: Enable core library desugaring for camera plugin
+        run: |
+          sed -i '/targetCompatibility = JavaVersion.VERSION_1_8/a\        coreLibraryDesugaringEnabled true' android/app/build.gradle
+          sed -i "s/dependencies {}/dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\n}/" android/app/build.gradle
+
+      # Camera access requires this permission declared in the manifest,
+      # or the app crashes the moment it tries to open the camera.
+      - name: Add camera permission to manifest
+        run: |
+          sed -i '/<manifest xmlns:android=/a\    <uses-permission android:name="android.permission.CAMERA"/>' android/app/src/main/AndroidManifest.xml
+
       - name: Install dependencies
         run: flutter pub get
 
-      # Retries the build up to 3 times in case of another transient
-      # network failure, instead of failing the whole workflow on the
-      # first hiccup.
       - name: Build APK
         run: |
           for i in 1 2 3; do
