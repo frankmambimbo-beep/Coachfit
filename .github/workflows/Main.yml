@@ -36,19 +36,24 @@ jobs:
         run: |
           sed -i "s#mavenCentral()#maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }\n        mavenCentral()#g" android/settings.gradle
 
-      # Fixed: previous sed looked for a literal empty "dependencies {}"
-      # which doesn't match Flutter's generated build.gradle format, so
-      # the desugaring library was never actually added even though the
-      # "enabled true" flag was. Now inserts right after the
-      # "dependencies {" line instead, which always matches.
+      # Enables desugaring (required by the camera plugin) and appends
+      # the required dependency as plain echo lines instead of a
+      # heredoc, so there's no risk of YAML block-scalar indentation
+      # rules being violated by unindented heredoc content.
       - name: Enable core library desugaring for camera plugin
         run: |
-          sed -i '/targetCompatibility = JavaVersion.VERSION_1_8/a\        coreLibraryDesugaringEnabled true' android/app/build.gradle
-          sed -i '/^dependencies {/a\    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.4"' android/app/build.gradle
+          sed -i '/compileOptions {/a\        coreLibraryDesugaringEnabled true' android/app/build.gradle
+          echo "" >> android/app/build.gradle
+          echo "dependencies {" >> android/app/build.gradle
+          echo "    coreLibraryDesugaring \"com.android.tools:desugar_jdk_libs:2.1.4\"" >> android/app/build.gradle
+          echo "}" >> android/app/build.gradle
 
       - name: Add camera permission to manifest
         run: |
           sed -i '/<manifest xmlns:android=/a\    <uses-permission android:name="android.permission.CAMERA"/>' android/app/src/main/AndroidManifest.xml
+
+      - name: Show patched build.gradle
+        run: cat android/app/build.gradle
 
       - name: Install dependencies
         run: flutter pub get
