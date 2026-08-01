@@ -12,6 +12,8 @@ import '../../features/habits/presentation/add_habit_screen.dart';
 import '../../features/goals/presentation/goals_screen.dart';
 import '../../features/goals/presentation/add_goal_screen.dart';
 import '../../features/challenges/presentation/challenges_screen.dart';
+import '../../features/nutrition/presentation/nutrition_screen.dart';
+import '../../features/nutrition/presentation/add_nutrition_screen.dart';
 import '../../features/stats/presentation/stats_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/profile/domain/user_profile.dart';
@@ -73,6 +75,15 @@ final appRouter = GoRouter(
         GoRoute(
             path: '/challenges',
             builder: (context, state) => const ChallengesScreen()),
+        GoRoute(
+          path: '/nutrition',
+          builder: (context, state) => const NutritionScreen(),
+          routes: [
+            GoRoute(
+                path: 'add',
+                builder: (context, state) => const AddNutritionScreen()),
+          ],
+        ),
         GoRoute(
             path: '/stats', builder: (context, state) => const StatsScreen()),
         GoRoute(
