@@ -10,10 +10,8 @@ import '../../habits/data/habits_repository.dart';
 import '../../habits/domain/habit.dart';
 import '../../goals/data/goals_repository.dart';
 import '../../challenges/data/challenges_repository.dart';
+import '../../nutrition/data/nutrition_repository.dart';
 
-/// The daily home dashboard. Real profile, today's-habits, goals, and
-/// challenges are wired to Hive. Sections owned by later phases
-/// (workout-of-the-day, water, mood) remain clearly marked placeholders.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -81,21 +79,17 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             const _ChallengesSummaryCard(),
             const SizedBox(height: AppSpacing.md),
+            const _WaterSummaryCard(),
+            const SizedBox(height: AppSpacing.md),
             _SectionPlaceholder(
               title: "Today's Workout",
-              subtitle: 'Workout plans arrive in Phase 5',
+              subtitle: 'Structured workout plans arrive in a later phase',
               icon: Icons.fitness_center_outlined,
             ),
             const SizedBox(height: AppSpacing.md),
             _SectionPlaceholder(
-              title: 'Water Intake',
-              subtitle: 'Nutrition tracking arrives in Phase 7',
-              icon: Icons.water_drop_outlined,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SectionPlaceholder(
               title: 'Mood Summary',
-              subtitle: 'Mood & journal arrive in Phase 7',
+              subtitle: 'Mood & journal — coming right after this',
               icon: Icons.mood_outlined,
             ),
           ],
@@ -267,8 +261,6 @@ class _HabitRow extends ConsumerWidget {
   }
 }
 
-/// Real "Goals" summary — replaces the old Phase 1 placeholder. Tapping
-/// anywhere on the card opens the full Goals tab.
 class _GoalsSummaryCard extends ConsumerWidget {
   const _GoalsSummaryCard();
 
@@ -306,9 +298,6 @@ class _GoalsSummaryCard extends ConsumerWidget {
   }
 }
 
-/// Real "Challenges" summary card, new in Phase 3 (no Phase 1 placeholder
-/// existed for this since Challenges wasn't planned as a dashboard slot
-/// yet). Tapping opens the full Challenges tab.
 class _ChallengesSummaryCard extends ConsumerWidget {
   const _ChallengesSummaryCard();
 
@@ -340,6 +329,43 @@ class _ChallengesSummaryCard extends ConsumerWidget {
             ),
           ),
           const Icon(Icons.chevron_right, color: AppColors.textMuted),
+        ],
+      ),
+    );
+  }
+}
+
+/// Real "Water Intake" card — replaces the Phase 1 placeholder that's
+/// been sitting on the dashboard since the very first build.
+class _WaterSummaryCard extends ConsumerWidget {
+  const _WaterSummaryCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final water = ref.watch(waterRepositoryProvider);
+
+    return GlassCard(
+      onTap: () => context.go('/nutrition'),
+      child: Row(
+        children: [
+          const Icon(Icons.water_drop_outlined, color: AppColors.accentSecondary),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Water Intake',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text('${water.glassesConsumed} / ${water.dailyGoalGlasses} glasses today',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline, color: AppColors.accentSecondary),
+            onPressed: () => ref.read(waterRepositoryProvider.notifier).addGlass(),
+          ),
         ],
       ),
     );
