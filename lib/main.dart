@@ -10,6 +10,7 @@ import 'features/goals/domain/goal.dart';
 import 'features/challenges/domain/challenge.dart';
 import 'features/workout/domain/workout_session.dart';
 import 'features/nutrition/domain/nutrition_entry.dart';
+import 'features/mood/domain/mood_entry.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +45,10 @@ void main() async {
   Hive.registerAdapter(NutritionEntryAdapter());
   Hive.registerAdapter(WaterLogAdapter());
 
+  // Mood adapters (Phase 6)
+  Hive.registerAdapter(MoodLevelAdapter());
+  Hive.registerAdapter(MoodEntryAdapter());
+
   await Hive.openBox<UserProfile>('profileBox');
   await Hive.openBox<Habit>('habitsBox');
   await Hive.openBox<Goal>('goalsBox');
@@ -51,6 +56,7 @@ void main() async {
   await Hive.openBox<WorkoutSession>('workoutsBox');
   await Hive.openBox<NutritionEntry>('nutritionBox');
   await Hive.openBox<WaterLog>('waterBox');
+  await Hive.openBox<MoodEntry>('moodBox');
 
   runApp(const ProviderScope(child: CoachFitApp()));
 }
