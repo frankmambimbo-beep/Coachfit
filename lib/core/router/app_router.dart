@@ -14,6 +14,8 @@ import '../../features/goals/presentation/add_goal_screen.dart';
 import '../../features/challenges/presentation/challenges_screen.dart';
 import '../../features/nutrition/presentation/nutrition_screen.dart';
 import '../../features/nutrition/presentation/add_nutrition_screen.dart';
+import '../../features/mood/presentation/mood_screen.dart';
+import '../../features/mood/presentation/log_mood_screen.dart';
 import '../../features/stats/presentation/stats_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/profile/domain/user_profile.dart';
@@ -82,6 +84,15 @@ final appRouter = GoRouter(
             GoRoute(
                 path: 'add',
                 builder: (context, state) => const AddNutritionScreen()),
+          ],
+        ),
+        GoRoute(
+          path: '/mood',
+          builder: (context, state) => const MoodScreen(),
+          routes: [
+            GoRoute(
+                path: 'log',
+                builder: (context, state) => const LogMoodScreen()),
           ],
         ),
         GoRoute(
