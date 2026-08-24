@@ -6,10 +6,6 @@ import '../../../core/theme/app_tokens.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../profile/domain/user_profile.dart';
 
-/// Multi-step onboarding wizard. Collects every field from the product
-/// brief (name, body stats, fitness level, goal, workout days/location/
-/// equipment, reminder time), then saves a UserProfile to Hive and
-/// routes into the dashboard.
 class ProfileSetupScreen extends ConsumerStatefulWidget {
   const ProfileSetupScreen({super.key, this.isGuest = false});
 
@@ -20,29 +16,25 @@ class ProfileSetupScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
-  // PageController drives the swipeable step-by-step form
   final _pageController = PageController();
   int _step = 0;
   static const int _totalSteps = 6;
 
-  // Text controllers hold the live value typed into each text field
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
   final _heightController = TextEditingController();
   final _weightController = TextEditingController();
 
-  // Everything else is stored directly as local state
   String _gender = 'Female';
   FitnessLevel _fitnessLevel = FitnessLevel.beginner;
   PrimaryGoal _goal = PrimaryGoal.buildDiscipline;
-  final Set<int> _workoutDays = {1, 3, 5}; // Mon/Wed/Fri by default
+  final Set<int> _workoutDays = {1, 3, 5};
   WorkoutLocation _location = WorkoutLocation.home;
   final Set<String> _equipment = {};
   TimeOfDay _reminderTime = const TimeOfDay(hour: 7, minute: 0);
 
   @override
   void dispose() {
-    // Always dispose controllers to avoid memory leaks
     _pageController.dispose();
     _nameController.dispose();
     _ageController.dispose();
@@ -56,7 +48,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       setState(() => _step++);
       _pageController.nextPage(duration: AppDurations.medium, curve: Curves.easeOutCubic);
     } else {
-      _finish(); // last step — save everything and move on
+      _finish();
     }
   }
 
@@ -65,7 +57,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       setState(() => _step--);
       _pageController.previousPage(duration: AppDurations.medium, curve: Curves.easeOutCubic);
     } else {
-      context.pop(); // leave onboarding entirely if on the first step
+      context.pop();
     }
   }
 
@@ -86,16 +78,20 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       isGuest: widget.isGuest,
     );
     await ref.read(profileRepositoryProvider.notifier).save(profile);
-    if (mounted) context.go('/dashboard');
+    // Routes into the new body-goal picker instead of straight to the
+    // dashboard, so every new profile chooses an aesthetic goal before
+    // landing on the home screen.
+    if (mounted) context.go('/onboarding/body-goal');
   }
 
-  // Disables the Continue button until the current step has valid input
   bool get _canAdvance {
     switch (_step) {
       case 0:
         return _nameController.text.trim().isNotEmpty;
       case 1:
-        return _ageController.text.isNotEmpty && _heightController.text.isNotEmpty && _weightController.text.isNotEmpty;
+        return _ageController.text.isNotEmpty &&
+            _heightController.text.isNotEmpty &&
+            _weightController.text.isNotEmpty;
       default:
         return true;
     }
@@ -104,7 +100,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: _back)),
+      appBar: AppBar(
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: _back),
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         child: Column(
@@ -114,8 +112,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Expanded(
               child: PageView(
                 controller: _pageController,
-                // Prevents swiping directly — forces use of the button
-                // so we can validate each step before advancing
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   _NameStep(controller: _nameController, onChanged: () => setState(() {})),
@@ -127,8 +123,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                     onGenderChanged: (g) => setState(() => _gender = g),
                     onChanged: () => setState(() {}),
                   ),
-                  _FitnessLevelStep(selected: _fitnessLevel, onSelected: (v) => setState(() => _fitnessLevel = v)),
-                  _GoalStep(selected: _goal, onSelected: (v) => setState(() => _goal = v)),
+                  _FitnessLevelStep(
+                    selected: _fitnessLevel,
+                    onSelected: (v) => setState(() => _fitnessLevel = v),
+                  ),
+                  _GoalStep(
+                    selected: _goal,
+                    onSelected: (v) => setState(() => _goal = v),
+                  ),
                   _WorkoutSetupStep(
                     workoutDays: _workoutDays,
                     location: _location,
@@ -141,14 +143,17 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                       _equipment.contains(e) ? _equipment.remove(e) : _equipment.add(e);
                     }),
                   ),
-                  _ReminderStep(time: _reminderTime, onTimeChanged: (t) => setState(() => _reminderTime = t)),
+                  _ReminderStep(
+                    time: _reminderTime,
+                    onTimeChanged: (t) => setState(() => _reminderTime = t),
+                  ),
                 ],
               ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
               child: ElevatedButton(
-                onPressed: _canAdvance ? _next : null, // null disables the button
+                onPressed: _canAdvance ? _next : null,
                 child: Text(_step == _totalSteps - 1 ? 'Finish Setup' : 'Continue'),
               ),
             ),
@@ -158,8 +163,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     );
   }
 }
-
-// --- Small helper widgets used only within this file ---
 
 class _StepProgress extends StatelessWidget {
   const _StepProgress({required this.step, required this.totalSteps});
@@ -219,7 +222,7 @@ class _NameStep extends StatelessWidget {
           const _StepTitle("What's your name?", "We'll use this to personalize your coaching."),
           TextField(
             controller: controller,
-            onChanged: (_) => onChanged(), // re-checks _canAdvance on every keystroke
+            onChanged: (_) => onChanged(),
             textCapitalization: TextCapitalization.words,
             decoration: const InputDecoration(hintText: 'Your name'),
           ),
@@ -266,7 +269,11 @@ class _BodyStatsStep extends StatelessWidget {
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: ChoiceChip(label: Text(g), selected: selected, onSelected: (_) => onGenderChanged(g)),
+                  child: ChoiceChip(
+                    label: Text(g),
+                    selected: selected,
+                    onSelected: (_) => onGenderChanged(g),
+                  ),
                 ),
               );
             }).toList(),
@@ -303,8 +310,6 @@ class _FitnessLevelStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _StepTitle('Fitness level', 'Be honest — this shapes your starting plan.'),
-          // Loops over every enum value so adding a new FitnessLevel
-          // later automatically shows up here with no extra code.
           ...FitnessLevel.values.map((level) => _SelectableTile(
                 label: level.name[0].toUpperCase() + level.name.substring(1),
                 selected: selected == level,
@@ -316,7 +321,6 @@ class _FitnessLevelStep extends StatelessWidget {
   }
 }
 
-// Shared between this file and the profile screen, so it's public (no underscore)
 const Map<PrimaryGoal, String> goalLabels = {
   PrimaryGoal.loseWeight: 'Lose Weight',
   PrimaryGoal.gainMuscle: 'Gain Muscle',
@@ -337,7 +341,7 @@ class _GoalStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _StepTitle('Primary goal', 'What matters most to you right now?'),
+          const _StepTitle('Primary goal', "What matters most to you right now?"),
           ...goalLabels.entries.map((e) => _SelectableTile(
                 label: e.value,
                 selected: selected == e.key,
@@ -350,7 +354,9 @@ class _GoalStep extends StatelessWidget {
 }
 
 const List<String> weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const List<String> equipmentOptions = ['None (bodyweight)', 'Dumbbells', 'Resistance Bands', 'Pull-up Bar', 'Full Gym'];
+const List<String> equipmentOptions = [
+  'None (bodyweight)', 'Dumbbells', 'Resistance Bands', 'Pull-up Bar', 'Full Gym',
+];
 
 class _WorkoutSetupStep extends StatelessWidget {
   const _WorkoutSetupStep({
@@ -379,8 +385,12 @@ class _WorkoutSetupStep extends StatelessWidget {
           Wrap(
             spacing: AppSpacing.sm,
             children: List.generate(7, (i) {
-              final day = i + 1; // 1 = Monday
-              return ChoiceChip(label: Text(weekdayLabels[i]), selected: workoutDays.contains(day), onSelected: (_) => onDayToggled(day));
+              final day = i + 1;
+              return ChoiceChip(
+                label: Text(weekdayLabels[i]),
+                selected: workoutDays.contains(day),
+                onSelected: (_) => onDayToggled(day),
+              );
             }),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -405,7 +415,13 @@ class _WorkoutSetupStep extends StatelessWidget {
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
-            children: equipmentOptions.map((eq) => FilterChip(label: Text(eq), selected: equipment.contains(eq), onSelected: (_) => onEquipmentToggled(eq))).toList(),
+            children: equipmentOptions.map((eq) {
+              return FilterChip(
+                label: Text(eq),
+                selected: equipment.contains(eq),
+                onSelected: (_) => onEquipmentToggled(eq),
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -428,14 +444,19 @@ class _ReminderStep extends StatelessWidget {
           Center(
             child: GestureDetector(
               onTap: () async {
-                // showTimePicker returns null if the user cancels
                 final picked = await showTimePicker(context: context, initialTime: time);
                 if (picked != null) onTimeChanged(picked);
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
-                decoration: BoxDecoration(color: AppColors.surfaceElevated, borderRadius: BorderRadius.circular(AppRadius.md)),
-                child: Text(time.format(context), style: Theme.of(context).textTheme.headlineMedium),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Text(
+                  time.format(context),
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
               ),
             ),
           ),
