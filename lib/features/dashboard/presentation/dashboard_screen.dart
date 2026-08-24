@@ -11,6 +11,8 @@ import '../../habits/domain/habit.dart';
 import '../../goals/data/goals_repository.dart';
 import '../../challenges/data/challenges_repository.dart';
 import '../../nutrition/data/nutrition_repository.dart';
+import '../../mood/data/mood_repository.dart';
+import '../../mood/domain/mood_entry.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -81,16 +83,12 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             const _WaterSummaryCard(),
             const SizedBox(height: AppSpacing.md),
+            const _MoodSummaryCard(),
+            const SizedBox(height: AppSpacing.md),
             _SectionPlaceholder(
               title: "Today's Workout",
               subtitle: 'Structured workout plans arrive in a later phase',
               icon: Icons.fitness_center_outlined,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SectionPlaceholder(
-              title: 'Mood Summary',
-              subtitle: 'Mood & journal — coming right after this',
-              icon: Icons.mood_outlined,
             ),
           ],
         ),
@@ -335,8 +333,6 @@ class _ChallengesSummaryCard extends ConsumerWidget {
   }
 }
 
-/// Real "Water Intake" card — replaces the Phase 1 placeholder that's
-/// been sitting on the dashboard since the very first build.
 class _WaterSummaryCard extends ConsumerWidget {
   const _WaterSummaryCard();
 
@@ -366,6 +362,60 @@ class _WaterSummaryCard extends ConsumerWidget {
             icon: const Icon(Icons.add_circle_outline, color: AppColors.accentSecondary),
             onPressed: () => ref.read(waterRepositoryProvider.notifier).addGlass(),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Real "Mood Summary" card — replaces the Phase 1 placeholder.
+class _MoodSummaryCard extends ConsumerWidget {
+  const _MoodSummaryCard();
+
+  String _emojiFor(MoodLevel m) {
+    switch (m) {
+      case MoodLevel.terrible:
+        return '😞';
+      case MoodLevel.bad:
+        return '🙁';
+      case MoodLevel.okay:
+        return '😐';
+      case MoodLevel.good:
+        return '🙂';
+      case MoodLevel.great:
+        return '😄';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(moodRepositoryProvider);
+    final todayEntry = ref.read(moodRepositoryProvider.notifier).todayEntry;
+
+    return GlassCard(
+      onTap: () => context.go('/mood'),
+      child: Row(
+        children: [
+          Text(
+            todayEntry != null ? _emojiFor(todayEntry.mood) : '🙂',
+            style: const TextStyle(fontSize: 24),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Mood Summary',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(
+                  todayEntry != null ? 'Checked in: ${todayEntry.mood.name}' : 'No check-in today — tap to log',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right, color: AppColors.textMuted),
         ],
       ),
     );
