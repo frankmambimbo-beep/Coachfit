@@ -3,425 +3,93 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
-import '../../profile/data/profile_repository.dart';
-import '../../profile/domain/user_profile.dart';
+import '../../../core/widgets/glass_card.dart';
+import '../data/profile_repository.dart';
+import '../domain/user_profile.dart';
+import '../../onboarding/presentation/profile_setup_screen.dart' show goalLabels;
+import '../../bodygoal/data/body_goal_repository.dart';
+import '../../bodygoal/domain/body_type_catalog.dart';
 
-class ProfileSetupScreen extends ConsumerStatefulWidget {
-  const ProfileSetupScreen({super.key, this.isGuest = false});
-
-  final bool isGuest;
-
-  @override
-  ConsumerState<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
-}
-
-class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
-  final _pageController = PageController();
-  int _step = 0;
-  static const int _totalSteps = 6;
-
-  final _nameController = TextEditingController();
-  final _ageController = TextEditingController();
-  final _heightController = TextEditingController();
-  final _weightController = TextEditingController();
-
-  String _gender = 'Female';
-  FitnessLevel _fitnessLevel = FitnessLevel.beginner;
-  PrimaryGoal _goal = PrimaryGoal.buildDiscipline;
-  final Set<int> _workoutDays = {1, 3, 5};
-  WorkoutLocation _location = WorkoutLocation.home;
-  final Set<String> _equipment = {};
-  TimeOfDay _reminderTime = const TimeOfDay(hour: 7, minute: 0);
+class ProfileScreen extends ConsumerWidget {
+  const ProfileScreen({super.key});
 
   @override
-  void dispose() {
-    _pageController.dispose();
-    _nameController.dispose();
-    _ageController.dispose();
-    _heightController.dispose();
-    _weightController.dispose();
-    super.dispose();
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(profileRepositoryProvider);
+    final bodyGoal = ref.watch(bodyGoalRepositoryProvider);
 
-  void _next() {
-    if (_step < _totalSteps - 1) {
-      setState(() => _step++);
-      _pageController.nextPage(duration: AppDurations.medium, curve: Curves.easeOutCubic);
-    } else {
-      _finish();
+    if (profile == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-  }
 
-  void _back() {
-    if (_step > 0) {
-      setState(() => _step--);
-      _pageController.previousPage(duration: AppDurations.medium, curve: Curves.easeOutCubic);
-    } else {
-      context.pop();
-    }
-  }
-
-  Future<void> _finish() async {
-    final profile = UserProfile(
-      name: _nameController.text.trim().isEmpty ? 'Athlete' : _nameController.text.trim(),
-      age: int.tryParse(_ageController.text) ?? 25,
-      gender: _gender,
-      heightCm: double.tryParse(_heightController.text) ?? 170,
-      weightKg: double.tryParse(_weightController.text) ?? 70,
-      fitnessLevel: _fitnessLevel,
-      primaryGoal: _goal,
-      preferredWorkoutDays: _workoutDays.toList()..sort(),
-      workoutLocation: _location,
-      availableEquipment: _equipment.toList(),
-      dailyReminderHour: _reminderTime.hour,
-      dailyReminderMinute: _reminderTime.minute,
-      isGuest: widget.isGuest,
-    );
-    await ref.read(profileRepositoryProvider.notifier).save(profile);
-    // Routes into the new body-goal picker instead of straight to the
-    // dashboard, so every new profile chooses an aesthetic goal before
-    // landing on the home screen.
-    if (mounted) context.go('/onboarding/body-goal');
-  }
-
-  bool get _canAdvance {
-    switch (_step) {
-      case 0:
-        return _nameController.text.trim().isNotEmpty;
-      case 1:
-        return _ageController.text.isNotEmpty &&
-            _heightController.text.isNotEmpty &&
-            _weightController.text.isNotEmpty;
-      default:
-        return true;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: _back),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        child: Column(
-          children: [
-            _StepProgress(step: _step, totalSteps: _totalSteps),
-            const SizedBox(height: AppSpacing.lg),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _NameStep(controller: _nameController, onChanged: () => setState(() {})),
-                  _BodyStatsStep(
-                    ageController: _ageController,
-                    heightController: _heightController,
-                    weightController: _weightController,
-                    gender: _gender,
-                    onGenderChanged: (g) => setState(() => _gender = g),
-                    onChanged: () => setState(() {}),
-                  ),
-                  _FitnessLevelStep(
-                    selected: _fitnessLevel,
-                    onSelected: (v) => setState(() => _fitnessLevel = v),
-                  ),
-                  _GoalStep(
-                    selected: _goal,
-                    onSelected: (v) => setState(() => _goal = v),
-                  ),
-                  _WorkoutSetupStep(
-                    workoutDays: _workoutDays,
-                    location: _location,
-                    equipment: _equipment,
-                    onLocationChanged: (v) => setState(() => _location = v),
-                    onDayToggled: (d) => setState(() {
-                      _workoutDays.contains(d) ? _workoutDays.remove(d) : _workoutDays.add(d);
-                    }),
-                    onEquipmentToggled: (e) => setState(() {
-                      _equipment.contains(e) ? _equipment.remove(e) : _equipment.add(e);
-                    }),
-                  ),
-                  _ReminderStep(
-                    time: _reminderTime,
-                    onTimeChanged: (t) => setState(() => _reminderTime = t),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              child: ElevatedButton(
-                onPressed: _canAdvance ? _next : null,
-                child: Text(_step == _totalSteps - 1 ? 'Finish Setup' : 'Continue'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StepProgress extends StatelessWidget {
-  const _StepProgress({required this.step, required this.totalSteps});
-  final int step;
-  final int totalSteps;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(totalSteps, (i) {
-        final active = i <= step;
-        return Expanded(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 3),
-            height: 4,
-            decoration: BoxDecoration(
-              color: active ? AppColors.accentPrimary : AppColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-}
-
-class _StepTitle extends StatelessWidget {
-  const _StepTitle(this.title, this.subtitle);
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-        const SizedBox(height: AppSpacing.xs),
-        Text(subtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
-        const SizedBox(height: AppSpacing.lg),
-      ],
-    );
-  }
-}
-
-class _NameStep extends StatelessWidget {
-  const _NameStep({required this.controller, required this.onChanged});
-  final TextEditingController controller;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: AppBar(title: const Text('Profile')),
+      body: ListView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          const _StepTitle("What's your name?", "We'll use this to personalize your coaching."),
-          TextField(
-            controller: controller,
-            onChanged: (_) => onChanged(),
-            textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(hintText: 'Your name'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BodyStatsStep extends StatelessWidget {
-  const _BodyStatsStep({
-    required this.ageController,
-    required this.heightController,
-    required this.weightController,
-    required this.gender,
-    required this.onGenderChanged,
-    required this.onChanged,
-  });
-
-  final TextEditingController ageController;
-  final TextEditingController heightController;
-  final TextEditingController weightController;
-  final String gender;
-  final ValueChanged<String> onGenderChanged;
-  final VoidCallback onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _StepTitle('Tell us about your body', 'This helps us tailor workouts and calorie estimates.'),
-          TextField(
-            controller: ageController,
-            onChanged: (_) => onChanged(),
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(hintText: 'Age'),
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(profile.name, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                if (profile.isGuest)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text('Guest account', style: TextStyle(color: AppColors.textMuted)),
+                  ),
+                const SizedBox(height: AppSpacing.md),
+                _InfoRow(label: 'Age', value: '${profile.age}'),
+                _InfoRow(label: 'Gender', value: profile.gender),
+                _InfoRow(label: 'Height', value: '${profile.heightCm.toStringAsFixed(0)} cm'),
+                _InfoRow(label: 'Weight', value: '${profile.weightKg.toStringAsFixed(0)} kg'),
+                _InfoRow(label: 'Fitness level', value: profile.fitnessLevel.name),
+                _InfoRow(label: 'Primary goal', value: goalLabels[profile.primaryGoal] ?? ''),
+                _InfoRow(label: 'Location', value: profile.workoutLocation == WorkoutLocation.home ? 'Home' : 'Gym'),
+                _InfoRow(label: 'Level', value: '${profile.level}'),
+                _InfoRow(label: 'XP', value: '${profile.xp} / ${profile.xpToNextLevel}'),
+                _InfoRow(label: 'Streak', value: '${profile.currentStreak} days'),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Row(
-            children: ['Male', 'Female', 'Other'].map((g) {
-              final selected = gender == g;
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: ChoiceChip(
-                    label: Text(g),
-                    selected: selected,
-                    onSelected: (_) => onGenderChanged(g),
+          GlassCard(
+            onTap: () => context.push('/profile/body-goal'),
+            child: Row(
+              children: [
+                const Icon(Icons.accessibility_new, color: AppColors.accentPrimary),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Body Goal',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w600)),
+                      Text(
+                        bodyGoal != null
+                            ? bodyTypeCatalog[bodyGoal]!.title
+                            : 'Not set — tap to choose',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AppColors.textMuted),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            controller: heightController,
-            onChanged: (_) => onChanged(),
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(hintText: 'Height (cm)'),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            controller: weightController,
-            onChanged: (_) => onChanged(),
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(hintText: 'Weight (kg)'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FitnessLevelStep extends StatelessWidget {
-  const _FitnessLevelStep({required this.selected, required this.onSelected});
-  final FitnessLevel selected;
-  final ValueChanged<FitnessLevel> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _StepTitle('Fitness level', 'Be honest — this shapes your starting plan.'),
-          ...FitnessLevel.values.map((level) => _SelectableTile(
-                label: level.name[0].toUpperCase() + level.name.substring(1),
-                selected: selected == level,
-                onTap: () => onSelected(level),
-              )),
-        ],
-      ),
-    );
-  }
-}
-
-const Map<PrimaryGoal, String> goalLabels = {
-  PrimaryGoal.loseWeight: 'Lose Weight',
-  PrimaryGoal.gainMuscle: 'Gain Muscle',
-  PrimaryGoal.buildDiscipline: 'Build Discipline',
-  PrimaryGoal.improveHealth: 'Improve Health',
-  PrimaryGoal.increaseStrength: 'Increase Strength',
-  PrimaryGoal.improveEndurance: 'Improve Endurance',
-};
-
-class _GoalStep extends StatelessWidget {
-  const _GoalStep({required this.selected, required this.onSelected});
-  final PrimaryGoal selected;
-  final ValueChanged<PrimaryGoal> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _StepTitle('Primary goal', "What matters most to you right now?"),
-          ...goalLabels.entries.map((e) => _SelectableTile(
-                label: e.value,
-                selected: selected == e.key,
-                onTap: () => onSelected(e.key),
-              )),
-        ],
-      ),
-    );
-  }
-}
-
-const List<String> weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const List<String> equipmentOptions = [
-  'None (bodyweight)', 'Dumbbells', 'Resistance Bands', 'Pull-up Bar', 'Full Gym',
-];
-
-class _WorkoutSetupStep extends StatelessWidget {
-  const _WorkoutSetupStep({
-    required this.workoutDays,
-    required this.location,
-    required this.equipment,
-    required this.onLocationChanged,
-    required this.onDayToggled,
-    required this.onEquipmentToggled,
-  });
-
-  final Set<int> workoutDays;
-  final WorkoutLocation location;
-  final Set<String> equipment;
-  final ValueChanged<WorkoutLocation> onLocationChanged;
-  final ValueChanged<int> onDayToggled;
-  final ValueChanged<String> onEquipmentToggled;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _StepTitle('Your workout setup', 'Pick your days, location, and equipment.'),
-          Wrap(
-            spacing: AppSpacing.sm,
-            children: List.generate(7, (i) {
-              final day = i + 1;
-              return ChoiceChip(
-                label: Text(weekdayLabels[i]),
-                selected: workoutDays.contains(day),
-                onSelected: (_) => onDayToggled(day),
-              );
-            }),
+                const Icon(Icons.chevron_right, color: AppColors.textMuted),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          Row(
-            children: WorkoutLocation.values.map((loc) {
-              final selected = location == loc;
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: ChoiceChip(
-                    label: Text(loc == WorkoutLocation.home ? 'Home' : 'Gym'),
-                    selected: selected,
-                    onSelected: (_) => onLocationChanged(loc),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text('Equipment available', style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: equipmentOptions.map((eq) {
-              return FilterChip(
-                label: Text(eq),
-                selected: equipment.contains(eq),
-                onSelected: (_) => onEquipmentToggled(eq),
-              );
-            }).toList(),
+          OutlinedButton(
+            onPressed: () async {
+              await ref.read(profileRepositoryProvider.notifier).clear();
+              if (context.mounted) context.go('/onboarding');
+            },
+            child: const Text('Reset & Restart Onboarding'),
           ),
         ],
       ),
@@ -429,71 +97,21 @@ class _WorkoutSetupStep extends StatelessWidget {
   }
 }
 
-class _ReminderStep extends StatelessWidget {
-  const _ReminderStep({required this.time, required this.onTimeChanged});
-  final TimeOfDay time;
-  final ValueChanged<TimeOfDay> onTimeChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _StepTitle('Daily reminder', 'When should we nudge you each day?'),
-          Center(
-            child: GestureDetector(
-              onTap: () async {
-                final picked = await showTimePicker(context: context, initialTime: time);
-                if (picked != null) onTimeChanged(picked);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: Text(
-                  time.format(context),
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SelectableTile extends StatelessWidget {
-  const _SelectableTile({required this.label, required this.selected, required this.onTap});
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
   final String label;
-  final bool selected;
-  final VoidCallback onTap;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.accentPrimary.withOpacity(0.15) : AppColors.surfaceElevated,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(color: selected ? AppColors.accentPrimary : Colors.transparent, width: 1.5),
-          ),
-          child: Row(
-            children: [
-              Expanded(child: Text(label, style: Theme.of(context).textTheme.titleMedium)),
-              if (selected) const Icon(Icons.check_circle, color: AppColors.accentPrimary),
-            ],
-          ),
-        ),
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: AppColors.textSecondary)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }
