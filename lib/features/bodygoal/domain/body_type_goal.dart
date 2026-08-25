@@ -16,15 +16,12 @@ enum BodyTypeGoal {
   hourglass, // curves, balanced upper/lower with a defined waist
   @HiveField(5)
   athletic, // general balanced athletic build
-}
-
-@HiveType(typeId: 61)
-class BodyGoalSelection extends HiveObject {
-  @HiveField(0)
-  BodyTypeGoal goal;
-
-  @HiveField(1)
-  DateTime selectedAt;
-
-  BodyGoalSelection({required this.goal, required this.selectedAt});
+  @HiveField(6)
+  pear, // fuller lower body, want to build/balance upper body
+  @HiveField(7)
+  apple, // weight carried in the midsection, want a trimmer waist
+  @HiveField(8)
+  diamond, // weight carried centrally, narrower shoulders/hips
+  @HiveField(9)
+  spoon, // fuller hips/thighs with a defined waist
 }
