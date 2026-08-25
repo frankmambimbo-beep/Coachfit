@@ -7,6 +7,7 @@ import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../data/workout_repository.dart';
 import '../domain/workout_session.dart';
+import 'widgets/add_exercise_dialog.dart';
 
 class AddWorkoutScreen extends ConsumerStatefulWidget {
   const AddWorkoutScreen({super.key});
@@ -41,71 +42,9 @@ class _AddWorkoutScreenState extends ConsumerState<AddWorkoutScreen> {
   }
 
   Future<void> _addExercise() async {
-    final nameController = TextEditingController();
-    final setsController = TextEditingController(text: '3');
-    final repsController = TextEditingController(text: '10');
-    final weightController = TextEditingController(text: '0');
-
     final result = await showDialog<ExerciseEntry>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add exercise'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                  labelText: 'Exercise name', hintText: 'e.g. Bench press'),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: setsController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Sets'),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: TextField(
-                    controller: repsController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Reps'),
-                  ),
-                ),
-              ],
-            ),
-            TextField(
-              controller: weightController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                  labelText: 'Weight (kg)', hintText: '0 for bodyweight'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              final name = nameController.text.trim();
-              if (name.isEmpty) return;
-              Navigator.pop(
-                ctx,
-                ExerciseEntry(
-                  name: name,
-                  sets: int.tryParse(setsController.text) ?? 0,
-                  reps: int.tryParse(repsController.text) ?? 0,
-                  weightKg: double.tryParse(weightController.text) ?? 0,
-                ),
-              );
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+      builder: (ctx) => const AddExerciseDialog(),
     );
 
     if (result != null) {
