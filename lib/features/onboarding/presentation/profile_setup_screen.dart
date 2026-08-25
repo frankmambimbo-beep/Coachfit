@@ -78,6 +78,13 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       isGuest: widget.isGuest,
     );
     await ref.read(profileRepositoryProvider.notifier).save(profile);
+
+    await NotificationService.requestPermission();
+    await NotificationService.scheduleDailyReminder(
+      hour: profile.dailyReminderHour,
+      minute: profile.dailyReminderMinute,
+    );
+
     // Routes into the new body-goal picker instead of straight to the
     // dashboard, so every new profile chooses an aesthetic goal before
     // landing on the home screen.
