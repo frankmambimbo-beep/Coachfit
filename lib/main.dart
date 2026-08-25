@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/services/notification_service.dart';
 import 'features/profile/domain/user_profile.dart';
 import 'features/habits/domain/habit.dart';
 import 'features/goals/domain/goal.dart';
@@ -63,6 +64,8 @@ void main() async {
   await Hive.openBox<WaterLog>('waterBox');
   await Hive.openBox<MoodEntry>('moodBox');
   await Hive.openBox<BodyGoalSelection>('bodyGoalBox');
+
+  await NotificationService.initialize();
 
   runApp(const ProviderScope(child: CoachFitApp()));
 }
