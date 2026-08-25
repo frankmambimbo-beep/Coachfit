@@ -102,4 +102,17 @@ class WaterRepository extends StateNotifier<WaterLog> {
     await _box.put(_todayKey, state);
     state = _box.get(_todayKey)!;
   }
+
+  // Used by the Stats screen to chart the last 7 days of water intake.
+  // Days with no logged entry (the box has no key for that date) are
+  // returned as a WaterLog with 0 glasses, so the chart always has a
+  // full 7-day range instead of gaps.
+  List<WaterLog> last7Days() {
+    final today = WaterLog.dateOnly(DateTime.now());
+    return List.generate(7, (i) {
+      final day = today.subtract(Duration(days: 6 - i));
+      final existing = _box.get(day.toIso8601String());
+      return existing ?? WaterLog(date: day, glassesConsumed: 0);
+    });
+  }
 }
