@@ -49,8 +49,16 @@ class BodyTypeGoalAdapter extends TypeAdapter<BodyTypeGoal> {
       case 4:
         return BodyTypeGoal.hourglass;
       case 5:
-      default:
         return BodyTypeGoal.athletic;
+      case 6:
+        return BodyTypeGoal.pear;
+      case 7:
+        return BodyTypeGoal.apple;
+      case 8:
+        return BodyTypeGoal.diamond;
+      case 9:
+      default:
+        return BodyTypeGoal.spoon;
     }
   }
 
@@ -74,6 +82,18 @@ class BodyTypeGoalAdapter extends TypeAdapter<BodyTypeGoal> {
         break;
       case BodyTypeGoal.athletic:
         writer.writeByte(5);
+        break;
+      case BodyTypeGoal.pear:
+        writer.writeByte(6);
+        break;
+      case BodyTypeGoal.apple:
+        writer.writeByte(7);
+        break;
+      case BodyTypeGoal.diamond:
+        writer.writeByte(8);
+        break;
+      case BodyTypeGoal.spoon:
+        writer.writeByte(9);
         break;
     }
   }
