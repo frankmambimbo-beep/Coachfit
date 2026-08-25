@@ -12,8 +12,6 @@ class BodyTypeInfo {
   });
 }
 
-// A static reference catalog — not stored in Hive, since it doesn't
-// change per-user. Only the user's *selected* goal is persisted.
 const Map<BodyTypeGoal, BodyTypeInfo> bodyTypeCatalog = {
   BodyTypeGoal.vTaper: BodyTypeInfo(
     title: 'V-Taper',
@@ -79,6 +77,50 @@ const Map<BodyTypeGoal, BodyTypeInfo> bodyTypeCatalog = {
       'Squats',
       'Sprints / interval running',
       'Mobility and core work',
+    ],
+  ),
+  BodyTypeGoal.pear: BodyTypeInfo(
+    title: 'Pear',
+    description: 'Fuller hips and thighs — building the upper body to balance the frame.',
+    recommendedExercises: [
+      'Overhead shoulder press',
+      'Lateral raises',
+      'Push-ups / bench press',
+      'Rows (build the back and shoulders)',
+      'Core work',
+    ],
+  ),
+  BodyTypeGoal.apple: BodyTypeInfo(
+    title: 'Apple',
+    description: 'Weight carried mostly in the midsection — building a trimmer core.',
+    recommendedExercises: [
+      'Full-body strength circuits',
+      'Cardio intervals (HIIT)',
+      'Core work — planks, rotational movements',
+      'Squats',
+      'Deadlifts',
+    ],
+  ),
+  BodyTypeGoal.diamond: BodyTypeInfo(
+    title: 'Diamond',
+    description: 'Weight carried centrally with narrower shoulders and hips — building width top and bottom.',
+    recommendedExercises: [
+      'Lateral raises',
+      'Overhead shoulder press',
+      'Squats',
+      'Hip thrusts',
+      'Core work',
+    ],
+  ),
+  BodyTypeGoal.spoon: BodyTypeInfo(
+    title: 'Spoon',
+    description: 'Fuller hips and thighs with a naturally defined waist — building the upper body and core.',
+    recommendedExercises: [
+      'Push-ups / bench press',
+      'Rows',
+      'Overhead shoulder press',
+      'Core work',
+      'Light lower-body maintenance work',
     ],
   ),
 };
