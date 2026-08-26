@@ -6,7 +6,9 @@ import '../../features/onboarding/presentation/profile_setup_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/workout/presentation/workout_screen.dart';
 import '../../features/workout/presentation/add_workout_screen.dart';
-import '../../features/workout/presentation/pushup_camera_screen.dart';
+import '../../features/workout/presentation/exercise_select_screen.dart';
+import '../../features/workout/presentation/exercise_camera_screen.dart';
+import '../../features/workout/domain/pose_analysis/counter_factory.dart';
 import '../../features/habits/presentation/habits_screen.dart';
 import '../../features/habits/presentation/add_habit_screen.dart';
 import '../../features/goals/presentation/goals_screen.dart';
@@ -60,8 +62,17 @@ final appRouter = GoRouter(
                 path: 'add',
                 builder: (context, state) => const AddWorkoutScreen()),
             GoRoute(
-                path: 'pushups',
-                builder: (context, state) => const PushupCameraScreen()),
+              path: 'track',
+              builder: (context, state) => const ExerciseSelectScreen(),
+              routes: [
+                GoRoute(
+                  path: 'camera',
+                  builder: (context, state) => ExerciseCameraScreen(
+                    exercise: state.extra as TrackableExercise,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
         GoRoute(
