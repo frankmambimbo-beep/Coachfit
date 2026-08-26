@@ -12,13 +12,8 @@ import '../data/workout_repository.dart';
 import '../domain/workout_session.dart';
 import '../domain/pose_analysis/counter_factory.dart';
 import '../domain/pose_analysis/exercise_counter.dart';
+import 'widgets/pose_painter.dart';
 
-/// Generic camera + pose-tracking screen. Takes ONE [TrackableExercise]
-/// and creates exactly one matching counter for it — that counter is
-/// the only thing ever incremented for the lifetime of this screen.
-/// Switching exercises means leaving this screen and picking a new one
-/// from ExerciseSelectScreen, which always creates a fresh counter, so
-/// counts from different exercises can never blend together.
 class ExerciseCameraScreen extends ConsumerStatefulWidget {
   const ExerciseCameraScreen({super.key, required this.exercise});
 
@@ -38,10 +33,15 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
   bool _streaming = false;
   int _frameSkipCounter = 0;
 
+  // Latest detected pose + the image size it was detected against —
+  // both needed by PosePainter to draw the overlay in the right place.
+  Pose? _latestPose;
+  Size? _latestImageSize;
+  CameraLensDirection _lensDirection = CameraLensDirection.front;
+
   @override
   void initState() {
     super.initState();
-    // Created once, tied to this exercise — never swapped mid-session.
     _counter = createCounterFor(widget.exercise);
     _setup();
   }
@@ -58,6 +58,7 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
         (c) => c.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
       );
+      _lensDirection = camera.lensDirection;
 
       final controller = CameraController(
         camera,
@@ -97,10 +98,23 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
         if (inputImage != null) {
           final poses = await _poseDetector!.processImage(inputImage);
           if (poses.isNotEmpty && mounted) {
-            final completedRep = _counter.processPose(poses.first);
-            if (completedRep) {
-              setState(() {});
-            }
+            _counter.processPose(poses.first);
+
+            // Landmark coordinates are reported in the orientation
+            // ML Kit was told about via the rotation metadata, so the
+            // overlay's reference size needs width/height swapped
+            // whenever the sensor is mounted sideways (90/270°) —
+            // otherwise the skeleton stretches in the wrong direction.
+            final rotationDegrees = camera.sensorOrientation;
+            final swapDims = rotationDegrees == 90 || rotationDegrees == 270;
+            final imgSize = swapDims
+                ? Size(image.height.toDouble(), image.width.toDouble())
+                : Size(image.width.toDouble(), image.height.toDouble());
+
+            setState(() {
+              _latestPose = poses.first;
+              _latestImageSize = imgSize;
+            });
           }
         }
       } catch (_) {
@@ -182,6 +196,16 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
                   fit: StackFit.expand,
                   children: [
                     CameraPreview(_controller!),
+                    if (_latestPose != null && _latestImageSize != null)
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: PosePainter(
+                            _latestPose,
+                            _latestImageSize!,
+                            _lensDirection,
+                          ),
+                        ),
+                      ),
                     Positioned(
                       top: AppSpacing.lg,
                       left: 0,
