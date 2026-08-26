@@ -58,6 +58,22 @@ jobs:
       - name: Generate missing platform folders
         run: flutter create --platforms=android --project-name=coachfit --org com.coachfit .
 
+      # Root cause of "RES_TABLE_TYPE_TYPE entry offsets overlap actual entry data":
+      # android-35's android.jar uses a resource-table format that the aapt2 pulled
+      # in via Maven/AGP doesn't understand yet. Point Gradle at the aapt2 binary
+      # that ships inside the build-tools;35.0.0 package we just installed instead.
+      # Must run AFTER `flutter create` above, since that step regenerates the
+      # android/ folder (including gradle.properties) from the template.
+      - name: Override aapt2 with the SDK 35 build-tools version
+        run: |
+          AAPT2_PATH="$ANDROID_HOME/build-tools/35.0.0/aapt2"
+          if [ ! -x "$AAPT2_PATH" ]; then
+            echo "aapt2 not found or not executable at $AAPT2_PATH"
+            exit 1
+          fi
+          echo "android.aapt2FromMavenOverride=$AAPT2_PATH" >> android/gradle.properties
+          cat android/gradle.properties
+
       # Bumped from 1.9.22 - the previous pin still left dependencies compiled with
       # newer Kotlin metadata than the plugin expected. 1.9.24 is the latest 1.9.x
       # and stays compatible with Flutter 3.24's bundled AGP.
