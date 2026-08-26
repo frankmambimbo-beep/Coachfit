@@ -1,63 +1,41 @@
 import 'dart:math';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'exercise_counter.dart';
+import 'rep_state_tracker.dart';
 
-/// Tracks push-up reps via normalized vertical torso movement (primary)
-/// with elbow-angle as a fallback when hips aren't visible. See prior
-/// version's comments for the full rationale — logic unchanged here,
-/// only wrapped to implement ExerciseCounter.
 class PushupCounter implements ExerciseCounter {
   @override
   int reps = 0;
   @override
   String get exerciseName => 'Push-ups';
 
-  bool _isDown = false;
-  double? _torsoBaseline;
-  double? _elbowBaseline;
+  final _torsoTracker = RepStateTracker(downThresholdRatio: 0.75, upThresholdRatio: 0.90);
+  final _elbowTracker = RepStateTracker(downThresholdRatio: 0.75, upThresholdRatio: 0.90);
 
   @override
   bool processPose(Pose pose) {
     final torsoRatio = _torsoRatio(pose);
     if (torsoRatio != null) {
-      return _evaluate(torsoRatio, isTorso: true);
+      final completed = _torsoTracker.update(torsoRatio);
+      if (completed) reps++;
+      return completed;
     }
 
     final elbowAngle = _averageElbowAngle(pose);
     if (elbowAngle != null) {
-      return _evaluate(elbowAngle, isTorso: false);
+      final completed = _elbowTracker.update(elbowAngle);
+      if (completed) reps++;
+      return completed;
     }
 
-    return false;
-  }
-
-  bool _evaluate(double value, {required bool isTorso}) {
-    if (isTorso) {
-      _torsoBaseline ??= value;
-    } else {
-      _elbowBaseline ??= value;
-    }
-
-    final baseline = isTorso ? _torsoBaseline! : _elbowBaseline!;
-    final downThreshold = baseline * 0.75;
-    final upThreshold = baseline * 0.90;
-
-    if (!_isDown && value < downThreshold) {
-      _isDown = true;
-    } else if (_isDown && value > upThreshold) {
-      _isDown = false;
-      reps++;
-      return true;
-    }
     return false;
   }
 
   @override
   void reset() {
     reps = 0;
-    _isDown = false;
-    _torsoBaseline = null;
-    _elbowBaseline = null;
+    _torsoTracker.reset();
+    _elbowTracker.reset();
   }
 
   double? _torsoRatio(Pose pose) {
@@ -89,15 +67,15 @@ class PushupCounter implements ExerciseCounter {
   }
 
   double? _averageElbowAngle(Pose pose) {
-    final leftAngle = _elbowAngle(
+    final left = _elbowAngle(
       pose, PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist,
     );
-    final rightAngle = _elbowAngle(
+    final right = _elbowAngle(
       pose, PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist,
     );
 
-    if (leftAngle != null && rightAngle != null) return (leftAngle + rightAngle) / 2;
-    return leftAngle ?? rightAngle;
+    if (left != null && right != null) return (left + right) / 2;
+    return left ?? right;
   }
 
   double? _elbowAngle(
