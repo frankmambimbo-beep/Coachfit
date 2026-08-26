@@ -41,7 +41,7 @@ class WorkoutScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
           GlassCard(
-            onTap: () => context.push('/workout/pushups'),
+            onTap: () => context.push('/workout/track'),
             child: Row(
               children: [
                 const Icon(Icons.videocam, color: AppColors.accentSecondary),
@@ -51,14 +51,14 @@ class WorkoutScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Push-up Counter',
+                        'Camera Rep Counter',
                         style: Theme.of(context)
                             .textTheme
                             .titleSmall
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       Text(
-                        'Camera-tracked reps, auto-logged',
+                        'Push-ups, squats, or bicep curls — auto-logged',
                         style: Theme.of(context)
                             .textTheme
                             .bodySmall
