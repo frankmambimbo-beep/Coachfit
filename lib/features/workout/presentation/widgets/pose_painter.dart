@@ -2,34 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 
-/// Draws the detected pose as dots on each joint ("balls") connected by
-/// lines ("sticks") — a live skeleton overlay on top of the camera
-/// preview, so it's obvious what the tracker is actually seeing.
+/// Draws a skeleton from already-smoothed landmark positions (see
+/// exercise_camera_screen's landmark smoothing) rather than raw,
+/// noisy per-frame detections — this is what stops the overlay from
+/// visibly jittering/"dancing" between frames.
 class PosePainter extends CustomPainter {
-  PosePainter(this.pose, this.imageSize, this.lensDirection);
+  PosePainter(this.points, this.imageSize, this.lensDirection);
 
-  final Pose? pose;
+  final Map<PoseLandmarkType, Offset> points;
   final Size imageSize;
   final CameraLensDirection lensDirection;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final p = pose;
-    if (p == null || imageSize.width == 0 || imageSize.height == 0) return;
+    if (points.isEmpty || imageSize.width == 0 || imageSize.height == 0) return;
 
     final dotPaint = Paint()
-      ..color = const Color(0xFF9D7BFF) // violet, matches app accent
+      ..color = const Color(0xFF9D7BFF)
       ..style = PaintingStyle.fill;
 
     final linePaint = Paint()
-      ..color = const Color(0xFF4ADE80) // mint, matches app accent
+      ..color = const Color(0xFF4ADE80)
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke;
 
     double translateX(double x) {
       final scaled = x * size.width / imageSize.width;
-      // Front camera preview is mirrored, so the overlay needs to
-      // mirror too or the dots won't line up with what's on screen.
       return lensDirection == CameraLensDirection.front
           ? size.width - scaled
           : scaled;
@@ -38,18 +36,16 @@ class PosePainter extends CustomPainter {
     double translateY(double y) => y * size.height / imageSize.height;
 
     void drawBone(PoseLandmarkType a, PoseLandmarkType b) {
-      final la = p.landmarks[a];
-      final lb = p.landmarks[b];
-      if (la == null || lb == null) return;
-      if (la.likelihood < 0.5 || lb.likelihood < 0.5) return;
+      final pa = points[a];
+      final pb = points[b];
+      if (pa == null || pb == null) return;
       canvas.drawLine(
-        Offset(translateX(la.x), translateY(la.y)),
-        Offset(translateX(lb.x), translateY(lb.y)),
+        Offset(translateX(pa.dx), translateY(pa.dy)),
+        Offset(translateX(pb.dx), translateY(pb.dy)),
         linePaint,
       );
     }
 
-    // The "sticks" — main skeleton connections.
     drawBone(PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder);
     drawBone(PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow);
     drawBone(PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist);
@@ -63,11 +59,9 @@ class PosePainter extends CustomPainter {
     drawBone(PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee);
     drawBone(PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle);
 
-    // The "balls" — one dot per confidently-detected joint.
-    for (final landmark in p.landmarks.values) {
-      if (landmark.likelihood < 0.5) continue;
+    for (final point in points.values) {
       canvas.drawCircle(
-        Offset(translateX(landmark.x), translateY(landmark.y)),
+        Offset(translateX(point.dx), translateY(point.dy)),
         6,
         dotPaint,
       );
@@ -76,6 +70,6 @@ class PosePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant PosePainter oldDelegate) {
-    return oldDelegate.pose != pose;
+    return oldDelegate.points != points;
   }
 }
