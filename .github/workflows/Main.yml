@@ -40,9 +40,6 @@ jobs:
         run: |
           sed -i '/<manifest xmlns:android=/a\    <uses-permission android:name="android.permission.CAMERA"/>' android/app/src/main/AndroidManifest.xml
 
-      # Android 13+ (API 33) requires this permission explicitly
-      # declared, or the runtime notification-permission prompt never
-      # appears and scheduled reminders silently never show.
       - name: Add notification permission to manifest
         run: |
           sed -i '/<manifest xmlns:android=/a\    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>' android/app/src/main/AndroidManifest.xml
@@ -50,11 +47,15 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # Switched from --debug to --release (strips debug symbols, much
+      # smaller) and split per CPU architecture, so each downloaded
+      # file only contains what your specific phone needs instead of
+      # bundling support for every architecture into one large file.
       - name: Build APK
         run: |
           success=false
           for i in 1 2 3; do
-            if flutter build apk --debug; then
+            if flutter build apk --release --split-per-abi; then
               success=true
               break
             fi
@@ -66,8 +67,11 @@ jobs:
             exit 1
           fi
 
-      - name: Upload APK
+      # Uploads all 3 architecture-specific APKs as one artifact zip.
+      # arm64-v8a covers the vast majority of Android phones made since
+      # ~2017 — that's almost certainly the one to install.
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: coachfit-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: coachfit-apk-release
+          path: build/app/outputs/flutter-apk/*.apk
