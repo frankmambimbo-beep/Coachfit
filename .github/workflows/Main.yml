@@ -47,15 +47,16 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Switched from --debug to --release (strips debug symbols, much
-      # smaller) and split per CPU architecture, so each downloaded
-      # file only contains what your specific phone needs instead of
-      # bundling support for every architecture into one large file.
+      # Reverted --split-per-abi: it triggers a known aapt2 resource-
+      # linking bug ("entry offsets overlap actual entry data") from a
+      # race condition when building multiple architecture APKs at
+      # once. Plain --release alone still gives the large majority of
+      # the size reduction (stripped debug symbols) without this risk.
       - name: Build APK
         run: |
           success=false
           for i in 1 2 3; do
-            if flutter build apk --release --split-per-abi; then
+            if flutter build apk --release; then
               success=true
               break
             fi
@@ -67,11 +68,8 @@ jobs:
             exit 1
           fi
 
-      # Uploads all 3 architecture-specific APKs as one artifact zip.
-      # arm64-v8a covers the vast majority of Android phones made since
-      # ~2017 — that's almost certainly the one to install.
-      - name: Upload APKs
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: coachfit-apk-release
-          path: build/app/outputs/flutter-apk/*.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
