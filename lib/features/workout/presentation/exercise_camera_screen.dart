@@ -33,9 +33,14 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
   bool _streaming = false;
   int _frameSkipCounter = 0;
 
-  // Latest detected pose + the image size it was detected against —
-  // both needed by PosePainter to draw the overlay in the right place.
-  Pose? _latestPose;
+  // Smoothed landmark positions for drawing only — separate from the
+  // rep-counting math, which now does its own smoothing internally via
+  // RepStateTracker. Blending each new position with the previous one
+  // (rather than jumping straight to the raw detection) is what stops
+  // the on-screen skeleton from visibly jittering between frames.
+  final Map<PoseLandmarkType, Offset> _smoothedPoints = {};
+  static const double _pointSmoothingAlpha = 0.4;
+
   Size? _latestImageSize;
   CameraLensDirection _lensDirection = CameraLensDirection.front;
 
@@ -99,22 +104,15 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
           final poses = await _poseDetector!.processImage(inputImage);
           if (poses.isNotEmpty && mounted) {
             _counter.processPose(poses.first);
+            _updateSmoothedPoints(poses.first);
 
-            // Landmark coordinates are reported in the orientation
-            // ML Kit was told about via the rotation metadata, so the
-            // overlay's reference size needs width/height swapped
-            // whenever the sensor is mounted sideways (90/270°) —
-            // otherwise the skeleton stretches in the wrong direction.
             final rotationDegrees = camera.sensorOrientation;
             final swapDims = rotationDegrees == 90 || rotationDegrees == 270;
             final imgSize = swapDims
                 ? Size(image.height.toDouble(), image.width.toDouble())
                 : Size(image.width.toDouble(), image.height.toDouble());
 
-            setState(() {
-              _latestPose = poses.first;
-              _latestImageSize = imgSize;
-            });
+            setState(() => _latestImageSize = imgSize);
           }
         }
       } catch (_) {
@@ -123,6 +121,24 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
         _isProcessingFrame = false;
       }
     });
+  }
+
+  void _updateSmoothedPoints(Pose pose) {
+    for (final landmark in pose.landmarks.values) {
+      if (landmark.likelihood < 0.5) {
+        // Low-confidence point — drop it rather than smooth toward a
+        // possibly-wrong position; it'll reappear once confidence
+        // recovers.
+        _smoothedPoints.remove(landmark.type);
+        continue;
+      }
+
+      final raw = Offset(landmark.x, landmark.y);
+      final previous = _smoothedPoints[landmark.type];
+      _smoothedPoints[landmark.type] = previous == null
+          ? raw
+          : Offset.lerp(previous, raw, _pointSmoothingAlpha)!;
+    }
   }
 
   InputImage? _toInputImage(CameraImage image, CameraDescription camera) {
@@ -196,11 +212,11 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
                   fit: StackFit.expand,
                   children: [
                     CameraPreview(_controller!),
-                    if (_latestPose != null && _latestImageSize != null)
+                    if (_smoothedPoints.isNotEmpty && _latestImageSize != null)
                       Positioned.fill(
                         child: CustomPaint(
                           painter: PosePainter(
-                            _latestPose,
+                            Map.of(_smoothedPoints),
                             _latestImageSize!,
                             _lensDirection,
                           ),
