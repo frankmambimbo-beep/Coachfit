@@ -31,8 +31,14 @@ jobs:
       # here instead of burning 3 build retries on a resource-linking error.
       - name: Install Android SDK platform 35
         run: |
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | sort -V | tail -n 1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager not found under \$ANDROID_HOME/cmdline-tools"
+            exit 1
+          fi
+          echo "Using sdkmanager at $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
           if [ ! -f "$ANDROID_HOME/platforms/android-35/android.jar" ]; then
             echo "android-35 platform jar still missing after install, aborting early."
             exit 1
