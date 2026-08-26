@@ -31,16 +31,27 @@ jobs:
       # here instead of burning 3 build retries on a resource-linking error.
       - name: Install Android SDK platform 35
         run: |
+          set -e
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | sort -V | tail -n 1)"
           if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager not found under \$ANDROID_HOME/cmdline-tools"
+            echo "sdkmanager not found under $ANDROID_HOME/cmdline-tools"
             exit 1
           fi
           echo "Using sdkmanager at $SDKMANAGER"
-          yes | "$SDKMANAGER" --licenses > /dev/null || true
-          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
-          if [ ! -f "$ANDROID_HOME/platforms/android-35/android.jar" ]; then
-            echo "android-35 platform jar still missing after install, aborting early."
+          # sudo matters here: /usr/local/lib/android/sdk on the hosted runner is
+          # root-owned, so an unprivileged sdkmanager install can silently no-op
+          # or write a truncated file that still passes a plain -f existence check.
+          yes | sudo "$SDKMANAGER" --licenses > /dev/null || true
+          sudo "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
+          sudo chmod -R a+rX "$ANDROID_HOME/platforms/android-35" "$ANDROID_HOME/build-tools/35.0.0" 2>/dev/null || true
+          JAR_PATH="$ANDROID_HOME/platforms/android-35/android.jar"
+          ls -la "$ANDROID_HOME/platforms/android-35/" || true
+          JAR_SIZE=$(stat -c%s "$JAR_PATH" 2>/dev/null || echo 0)
+          echo "android.jar size: $JAR_SIZE bytes"
+          if [ "$JAR_SIZE" -lt 1000000 ]; then
+            echo "android-35 platform jar missing or truncated after install (only $JAR_SIZE bytes), aborting early."
             exit 1
           fi
 
