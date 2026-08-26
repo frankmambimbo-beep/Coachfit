@@ -1,46 +1,30 @@
 import 'dart:math';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'exercise_counter.dart';
+import 'rep_state_tracker.dart';
 
-/// Tracks bicep curl reps via elbow angle (shoulder-elbow-wrist). Unlike
-/// push-ups, curls bend mostly in a plane the camera CAN see clearly
-/// from the front (the forearm swings up toward the shoulder), so a
-/// direct angle threshold is reliable here without needing a torso
-/// fallback signal.
 class BicepCurlCounter implements ExerciseCounter {
   @override
   int reps = 0;
   @override
   String get exerciseName => 'Bicep Curls';
 
-  bool _isCurled = false;
-  double? _baseline;
+  final _tracker = RepStateTracker(downThresholdRatio: 0.55, upThresholdRatio: 0.85);
 
   @override
   bool processPose(Pose pose) {
     final angle = _averageElbowAngle(pose);
     if (angle == null) return false;
 
-    _baseline ??= angle;
-    final baseline = _baseline!;
-    final curledThreshold = baseline * 0.55; // arm fully bent
-    final extendedThreshold = baseline * 0.85; // arm back down
-
-    if (!_isCurled && angle < curledThreshold) {
-      _isCurled = true;
-    } else if (_isCurled && angle > extendedThreshold) {
-      _isCurled = false;
-      reps++;
-      return true;
-    }
-    return false;
+    final completed = _tracker.update(angle);
+    if (completed) reps++;
+    return completed;
   }
 
   @override
   void reset() {
     reps = 0;
-    _isCurled = false;
-    _baseline = null;
+    _tracker.reset();
   }
 
   double? _averageElbowAngle(Pose pose) {
