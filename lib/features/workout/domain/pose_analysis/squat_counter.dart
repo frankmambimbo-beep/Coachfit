@@ -1,45 +1,30 @@
 import 'dart:math';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'exercise_counter.dart';
+import 'rep_state_tracker.dart';
 
-/// Tracks squat reps via the knee angle (hip-knee-ankle). Squats bend
-/// primarily in the plane visible from the front or side, so a direct
-/// angle threshold works reliably from either camera angle — unlike
-/// push-ups, which needed the torso-ratio workaround.
 class SquatCounter implements ExerciseCounter {
   @override
   int reps = 0;
   @override
   String get exerciseName => 'Squats';
 
-  bool _isDown = false;
-  double? _baseline;
+  final _tracker = RepStateTracker(downThresholdRatio: 0.65, upThresholdRatio: 0.90);
 
   @override
   bool processPose(Pose pose) {
     final angle = _averageKneeAngle(pose);
     if (angle == null) return false;
 
-    _baseline ??= angle;
-    final baseline = _baseline!;
-    final downThreshold = baseline * 0.65; // deep bend
-    final upThreshold = baseline * 0.90; // standing back up
-
-    if (!_isDown && angle < downThreshold) {
-      _isDown = true;
-    } else if (_isDown && angle > upThreshold) {
-      _isDown = false;
-      reps++;
-      return true;
-    }
-    return false;
+    final completed = _tracker.update(angle);
+    if (completed) reps++;
+    return completed;
   }
 
   @override
   void reset() {
     reps = 0;
-    _isDown = false;
-    _baseline = null;
+    _tracker.reset();
   }
 
   double? _averageKneeAngle(Pose pose) {
