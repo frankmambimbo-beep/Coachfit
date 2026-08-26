@@ -1,0 +1,78 @@
+import 'dart:math';
+import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
+import 'exercise_counter.dart';
+
+/// Tracks squat reps via the knee angle (hip-knee-ankle). Squats bend
+/// primarily in the plane visible from the front or side, so a direct
+/// angle threshold works reliably from either camera angle — unlike
+/// push-ups, which needed the torso-ratio workaround.
+class SquatCounter implements ExerciseCounter {
+  @override
+  int reps = 0;
+  @override
+  String get exerciseName => 'Squats';
+
+  bool _isDown = false;
+  double? _baseline;
+
+  @override
+  bool processPose(Pose pose) {
+    final angle = _averageKneeAngle(pose);
+    if (angle == null) return false;
+
+    _baseline ??= angle;
+    final baseline = _baseline!;
+    final downThreshold = baseline * 0.65; // deep bend
+    final upThreshold = baseline * 0.90; // standing back up
+
+    if (!_isDown && angle < downThreshold) {
+      _isDown = true;
+    } else if (_isDown && angle > upThreshold) {
+      _isDown = false;
+      reps++;
+      return true;
+    }
+    return false;
+  }
+
+  @override
+  void reset() {
+    reps = 0;
+    _isDown = false;
+    _baseline = null;
+  }
+
+  double? _averageKneeAngle(Pose pose) {
+    final left = _kneeAngle(
+      pose, PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle,
+    );
+    final right = _kneeAngle(
+      pose, PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle,
+    );
+
+    if (left != null && right != null) return (left + right) / 2;
+    return left ?? right;
+  }
+
+  double? _kneeAngle(
+    Pose pose, PoseLandmarkType hipType, PoseLandmarkType kneeType, PoseLandmarkType ankleType,
+  ) {
+    final hip = pose.landmarks[hipType];
+    final knee = pose.landmarks[kneeType];
+    final ankle = pose.landmarks[ankleType];
+
+    if (hip == null || knee == null || ankle == null) return null;
+    if (hip.likelihood < 0.5 || knee.likelihood < 0.5 || ankle.likelihood < 0.5) return null;
+
+    return _angleBetween(hip.x, hip.y, knee.x, knee.y, ankle.x, ankle.y);
+  }
+
+  double _angleBetween(double ax, double ay, double bx, double by, double cx, double cy) {
+    final angleA = atan2(ay - by, ax - bx);
+    final angleC = atan2(cy - by, cx - bx);
+    var angle = (angleA - angleC) * (180 / pi);
+    angle = angle.abs();
+    if (angle > 180) angle = 360 - angle;
+    return angle;
+  }
+}
