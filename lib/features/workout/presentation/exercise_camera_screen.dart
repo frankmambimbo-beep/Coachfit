@@ -39,7 +39,7 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
   // (rather than jumping straight to the raw detection) is what stops
   // the on-screen skeleton from visibly jittering between frames.
   final Map<PoseLandmarkType, Offset> _smoothedPoints = {};
-  static const double _pointSmoothingAlpha = 0.4;
+  static const double _pointSmoothingAlpha = 0.2;
 
   Size? _latestImageSize;
   CameraLensDirection _lensDirection = CameraLensDirection.front;
