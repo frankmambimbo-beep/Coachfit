@@ -1,6 +1,5 @@
 class SmoothedValue {
   SmoothedValue({this.alpha = 0.3});
-
   final double alpha;
   double? _value;
 
@@ -12,10 +11,10 @@ class SmoothedValue {
   void reset() => _value = null;
 }
 
-/// Shared rep-detection state machine. Now includes a calibration
-/// warm-up: rather than trusting a single first frame as the baseline
-/// (risky if that frame is slightly off), it collects several frames
-/// first and averages them — a much more stable reference point.
+/// Shared rep-detection state machine with a calibration warm-up: a
+/// short "hold position" phase collects several frames and averages
+/// them into a stable baseline, rather than trusting a single
+/// possibly-noisy first frame.
 class RepStateTracker {
   RepStateTracker({
     required this.downThresholdRatio,
@@ -40,9 +39,6 @@ class RepStateTracker {
   double get calibrationProgress =>
       (_calibrationSamples.length / calibrationFrames).clamp(0, 1);
 
-  /// Feed in one frame's raw measured value. Returns true exactly when
-  /// a full down-then-up rep is confirmed. Returns false during
-  /// calibration — no reps can register until warm-up completes.
   bool update(double rawValue) {
     final value = _smoother.update(rawValue);
 
