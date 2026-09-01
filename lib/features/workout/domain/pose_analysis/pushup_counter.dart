@@ -29,7 +29,7 @@ class PushupCounter implements ExerciseCounter {
       return completed;
     }
 
-    final elbowAngle = _averageElbowAngle(pose);
+    final elbowAngle = _bestElbowAngle(pose);
     if (elbowAngle != null) {
       final completed = _elbowTracker.update(elbowAngle);
       if (completed) reps++;
@@ -74,7 +74,15 @@ class PushupCounter implements ExerciseCounter {
     return verticalGap / torsoLength;
   }
 
-  double? _averageElbowAngle(Pose pose) {
+  // FIXED: near a 90° bend, small body rotation makes one arm look
+  // more foreshortened to the camera than the other, so left/right
+  // elbow angles can diverge sharply — blindly averaging a good
+  // reading with a bad one produced a garbage middle value right at
+  // the most important point of the movement. Now: if both sides
+  // agree reasonably (within 30°), average them as before. If they
+  // disagree a lot, trust only whichever side has higher combined
+  // landmark confidence instead of blending in the unreliable one.
+  double? _bestElbowAngle(Pose pose) {
     final left = _elbowAngle(
       pose, PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist,
     );
@@ -82,8 +90,32 @@ class PushupCounter implements ExerciseCounter {
       pose, PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist,
     );
 
-    if (left != null && right != null) return (left + right) / 2;
-    return left ?? right;
+    if (left == null) return right;
+    if (right == null) return left;
+
+    final divergence = (left - right).abs();
+    if (divergence <= 30) {
+      return (left + right) / 2;
+    }
+
+    final leftConfidence = _armConfidence(
+      pose, PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist,
+    );
+    final rightConfidence = _armConfidence(
+      pose, PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist,
+    );
+
+    return leftConfidence >= rightConfidence ? left : right;
+  }
+
+  double _armConfidence(
+    Pose pose, PoseLandmarkType shoulderType, PoseLandmarkType elbowType, PoseLandmarkType wristType,
+  ) {
+    final shoulder = pose.landmarks[shoulderType];
+    final elbow = pose.landmarks[elbowType];
+    final wrist = pose.landmarks[wristType];
+    if (shoulder == null || elbow == null || wrist == null) return 0;
+    return shoulder.likelihood + elbow.likelihood + wrist.likelihood;
   }
 
   double? _elbowAngle(
