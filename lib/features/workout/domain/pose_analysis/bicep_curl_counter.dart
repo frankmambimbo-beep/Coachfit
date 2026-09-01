@@ -12,6 +12,11 @@ class BicepCurlCounter implements ExerciseCounter {
   final _tracker = RepStateTracker(downThresholdRatio: 0.55, upThresholdRatio: 0.85);
 
   @override
+  bool get isCalibrated => _tracker.isCalibrated;
+  @override
+  double get calibrationProgress => _tracker.calibrationProgress;
+
+  @override
   bool processPose(Pose pose) {
     final angle = _averageElbowAngle(pose);
     if (angle == null) return false;
