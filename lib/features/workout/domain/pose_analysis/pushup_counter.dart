@@ -13,6 +13,14 @@ class PushupCounter implements ExerciseCounter {
   final _elbowTracker = RepStateTracker(downThresholdRatio: 0.75, upThresholdRatio: 0.90);
 
   @override
+  bool get isCalibrated => _torsoTracker.isCalibrated || _elbowTracker.isCalibrated;
+  @override
+  double get calibrationProgress =>
+      _torsoTracker.calibrationProgress > _elbowTracker.calibrationProgress
+          ? _torsoTracker.calibrationProgress
+          : _elbowTracker.calibrationProgress;
+
+  @override
   bool processPose(Pose pose) {
     final torsoRatio = _torsoRatio(pose);
     if (torsoRatio != null) {
