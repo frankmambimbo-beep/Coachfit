@@ -1,7 +1,3 @@
-/// Exponential moving average — blends each new reading with recent
-/// history so a single noisy frame can't cause a big jump. Lower
-/// [alpha] = smoother but slower to react; higher = more responsive
-/// but noisier.
 class SmoothedValue {
   SmoothedValue({this.alpha = 0.3});
 
@@ -16,36 +12,48 @@ class SmoothedValue {
   void reset() => _value = null;
 }
 
-/// Shared "did a rep just happen" state machine used by every exercise
-/// counter. Two things prevent jitter from causing phantom reps:
-/// 1. The tracked value is smoothed (see SmoothedValue) before it's
-///    ever compared to a threshold.
-/// 2. A threshold crossing must hold for [requiredConsecutiveFrames]
-///    in a row before it's trusted — one noisy frame flickering past
-///    a threshold and back is ignored, only a sustained movement
-///    counts.
+/// Shared rep-detection state machine. Now includes a calibration
+/// warm-up: rather than trusting a single first frame as the baseline
+/// (risky if that frame is slightly off), it collects several frames
+/// first and averages them — a much more stable reference point.
 class RepStateTracker {
   RepStateTracker({
     required this.downThresholdRatio,
     required this.upThresholdRatio,
     this.requiredConsecutiveFrames = 3,
+    this.calibrationFrames = 12,
     double smoothingAlpha = 0.3,
   }) : _smoother = SmoothedValue(alpha: smoothingAlpha);
 
   final double downThresholdRatio;
   final double upThresholdRatio;
   final int requiredConsecutiveFrames;
+  final int calibrationFrames;
   final SmoothedValue _smoother;
 
+  final List<double> _calibrationSamples = [];
   double? _baseline;
   bool _isTriggered = false;
   int _consecutiveCount = 0;
 
-  /// Feed in one frame's raw measured value (an angle or ratio).
-  /// Returns true exactly when a full down-then-up rep is confirmed.
+  bool get isCalibrated => _baseline != null;
+  double get calibrationProgress =>
+      (_calibrationSamples.length / calibrationFrames).clamp(0, 1);
+
+  /// Feed in one frame's raw measured value. Returns true exactly when
+  /// a full down-then-up rep is confirmed. Returns false during
+  /// calibration — no reps can register until warm-up completes.
   bool update(double rawValue) {
     final value = _smoother.update(rawValue);
-    _baseline ??= value;
+
+    if (_baseline == null) {
+      _calibrationSamples.add(value);
+      if (_calibrationSamples.length >= calibrationFrames) {
+        _baseline = _calibrationSamples.reduce((a, b) => a + b) / _calibrationSamples.length;
+      }
+      return false;
+    }
+
     final baseline = _baseline!;
     final downThreshold = baseline * downThresholdRatio;
     final upThreshold = baseline * upThresholdRatio;
@@ -76,6 +84,7 @@ class RepStateTracker {
   }
 
   void reset() {
+    _calibrationSamples.clear();
     _baseline = null;
     _isTriggered = false;
     _consecutiveCount = 0;
