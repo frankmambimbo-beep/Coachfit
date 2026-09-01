@@ -13,6 +13,7 @@ import '../domain/workout_session.dart';
 import '../domain/pose_analysis/counter_factory.dart';
 import '../domain/pose_analysis/exercise_counter.dart';
 import 'widgets/pose_painter.dart';
+import 'widgets/exercise_demo_widget.dart';
 
 class ExerciseCameraScreen extends ConsumerStatefulWidget {
   const ExerciseCameraScreen({super.key, required this.exercise});
@@ -33,11 +34,6 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
   bool _streaming = false;
   int _frameSkipCounter = 0;
 
-  // Smoothed landmark positions for drawing only — separate from the
-  // rep-counting math, which now does its own smoothing internally via
-  // RepStateTracker. Blending each new position with the previous one
-  // (rather than jumping straight to the raw detection) is what stops
-  // the on-screen skeleton from visibly jittering between frames.
   final Map<PoseLandmarkType, Offset> _smoothedPoints = {};
   static const double _pointSmoothingAlpha = 0.2;
 
@@ -126,9 +122,6 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
   void _updateSmoothedPoints(Pose pose) {
     for (final landmark in pose.landmarks.values) {
       if (landmark.likelihood < 0.5) {
-        // Low-confidence point — drop it rather than smooth toward a
-        // possibly-wrong position; it'll reappear once confidence
-        // recovers.
         _smoothedPoints.remove(landmark.type);
         continue;
       }
@@ -222,6 +215,11 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
                           ),
                         ),
                       ),
+                    Positioned(
+                      top: AppSpacing.lg,
+                      right: AppSpacing.md,
+                      child: ExerciseDemoWidget(exercise: widget.exercise),
+                    ),
                     Positioned(
                       top: AppSpacing.lg,
                       left: 0,
