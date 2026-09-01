@@ -1,16 +1,17 @@
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 
-/// Shared contract every exercise-specific counter implements. The
-/// camera screen only ever holds ONE of these at a time — whichever
-/// matches the exercise currently selected — so there's no risk of one
-/// exercise's movement accidentally incrementing another's count.
 abstract class ExerciseCounter {
   int get reps;
   String get exerciseName;
 
-  /// Feeds one frame's pose data in. Returns true if this frame
-  /// completed a rep.
-  bool processPose(Pose pose);
+  /// True once the counter has finished its warm-up and is actively
+  /// watching for reps. False during the initial "hold position" phase.
+  bool get isCalibrated;
 
+  /// 0.0–1.0 progress through calibration, for showing a progress
+  /// indicator while the person holds their starting position.
+  double get calibrationProgress;
+
+  bool processPose(Pose pose);
   void reset();
 }
