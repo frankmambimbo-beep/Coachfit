@@ -16,9 +16,6 @@ enum WorkoutType {
   other,
 }
 
-// A single exercise within a session. Not a HiveObject on its own —
-// it's embedded inside WorkoutSession.exercises, so it only needs a
-// plain @HiveType, not extends HiveObject.
 @HiveType(typeId: 31)
 class ExerciseEntry {
   @HiveField(0)
@@ -30,7 +27,6 @@ class ExerciseEntry {
   @HiveField(2)
   int reps;
 
-  // Weight in kg. 0 for bodyweight exercises.
   @HiveField(3)
   double weightKg;
 
@@ -40,6 +36,20 @@ class ExerciseEntry {
     required this.reps,
     this.weightKg = 0,
   });
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'sets': sets,
+        'reps': reps,
+        'weightKg': weightKg,
+      };
+
+  factory ExerciseEntry.fromJson(Map<String, dynamic> json) => ExerciseEntry(
+        name: json['name'] as String,
+        sets: json['sets'] as int,
+        reps: json['reps'] as int,
+        weightKg: (json['weightKg'] as num).toDouble(),
+      );
 }
 
 @HiveType(typeId: 32)
@@ -80,4 +90,28 @@ class WorkoutSession extends HiveObject {
   }) : exercises = exercises ?? [];
 
   int get totalSets => exercises.fold(0, (sum, e) => sum + e.sets);
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'type': type.name,
+        'date': date.toIso8601String(),
+        'durationMinutes': durationMinutes,
+        'exercises': exercises.map((e) => e.toJson()).toList(),
+        'notes': notes,
+        'xpReward': xpReward,
+      };
+
+  factory WorkoutSession.fromJson(Map<String, dynamic> json) => WorkoutSession(
+        id: json['id'] as String,
+        title: json['title'] as String,
+        type: WorkoutType.values.byName(json['type'] as String),
+        date: DateTime.parse(json['date'] as String),
+        durationMinutes: json['durationMinutes'] as int,
+        exercises: (json['exercises'] as List)
+            .map((e) => ExerciseEntry.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        notes: json['notes'] as String,
+        xpReward: json['xpReward'] as int,
+      );
 }
