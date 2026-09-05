@@ -83,6 +83,36 @@ class ProfileScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: AppSpacing.md),
+          GlassCard(
+            onTap: () => context.push('/profile/backup'),
+            child: Row(
+              children: [
+                const Icon(Icons.backup_outlined, color: AppColors.accentSecondary),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Backup & Restore',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w600)),
+                      Text(
+                        'Save your data somewhere safe, or restore it',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.textMuted),
+              ],
+            ),
+          ),
           const SizedBox(height: AppSpacing.lg),
           OutlinedButton(
             onPressed: () async {
