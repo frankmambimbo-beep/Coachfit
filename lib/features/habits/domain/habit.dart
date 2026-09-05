@@ -38,16 +38,12 @@ class Habit extends HiveObject {
   @HiveField(3)
   HabitFrequency frequency;
 
-  // Only used when frequency == specificDays.
-  // Uses DateTime.weekday convention: Monday=1 ... Sunday=7.
   @HiveField(4)
   List<int> activeDays;
 
   @HiveField(5)
   DateTime createdAt;
 
-  // Each completed day is stored normalized to midnight (year/month/day
-  // only), so "did I complete this today" is a simple equality check.
   @HiveField(6)
   List<DateTime> completions;
 
@@ -73,7 +69,6 @@ class Habit extends HiveObject {
     this.xpReward = 10,
   }) : completions = completions ?? [];
 
-  // Strips the time component so date comparisons are reliable.
   static DateTime dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
   bool get isCompletedToday {
@@ -81,9 +76,38 @@ class Habit extends HiveObject {
     return completions.any((d) => dateOnly(d) == today);
   }
 
-  // Whether this habit is "due" today, based on its frequency.
   bool get isDueToday {
     if (frequency == HabitFrequency.daily) return true;
     return activeDays.contains(DateTime.now().weekday);
   }
+
+  // Used by the backup/export feature to serialize this habit into
+  // plain JSON-compatible data.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'category': category.name,
+        'frequency': frequency.name,
+        'activeDays': activeDays,
+        'createdAt': createdAt.toIso8601String(),
+        'completions': completions.map((d) => d.toIso8601String()).toList(),
+        'currentStreak': currentStreak,
+        'longestStreak': longestStreak,
+        'xpReward': xpReward,
+      };
+
+  factory Habit.fromJson(Map<String, dynamic> json) => Habit(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        category: HabitCategory.values.byName(json['category'] as String),
+        frequency: HabitFrequency.values.byName(json['frequency'] as String),
+        activeDays: (json['activeDays'] as List).cast<int>(),
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        completions: (json['completions'] as List)
+            .map((d) => DateTime.parse(d as String))
+            .toList(),
+        currentStreak: json['currentStreak'] as int,
+        longestStreak: json['longestStreak'] as int,
+        xpReward: json['xpReward'] as int,
+      );
 }
