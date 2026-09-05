@@ -35,4 +35,14 @@ class BodyGoalSelection extends HiveObject {
   DateTime selectedAt;
 
   BodyGoalSelection({required this.goal, required this.selectedAt});
+
+  Map<String, dynamic> toJson() => {
+        'goal': goal.name,
+        'selectedAt': selectedAt.toIso8601String(),
+      };
+
+  factory BodyGoalSelection.fromJson(Map<String, dynamic> json) => BodyGoalSelection(
+        goal: BodyTypeGoal.values.byName(json['goal'] as String),
+        selectedAt: DateTime.parse(json['selectedAt'] as String),
+      );
 }
