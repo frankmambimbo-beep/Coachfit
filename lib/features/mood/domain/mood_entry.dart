@@ -38,4 +38,18 @@ class MoodEntry extends HiveObject {
   });
 
   static DateTime dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'mood': mood.name,
+        'journalText': journalText,
+        'date': date.toIso8601String(),
+      };
+
+  factory MoodEntry.fromJson(Map<String, dynamic> json) => MoodEntry(
+        id: json['id'] as String,
+        mood: MoodLevel.values.byName(json['mood'] as String),
+        journalText: json['journalText'] as String,
+        date: DateTime.parse(json['date'] as String),
+      );
 }
