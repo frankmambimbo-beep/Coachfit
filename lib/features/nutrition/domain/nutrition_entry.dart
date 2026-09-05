@@ -38,6 +38,22 @@ class NutritionEntry extends HiveObject {
     required this.calories,
     required this.date,
   });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'mealType': mealType.name,
+        'calories': calories,
+        'date': date.toIso8601String(),
+      };
+
+  factory NutritionEntry.fromJson(Map<String, dynamic> json) => NutritionEntry(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        mealType: MealType.values.byName(json['mealType'] as String),
+        calories: json['calories'] as int,
+        date: DateTime.parse(json['date'] as String),
+      );
 }
 
 @HiveType(typeId: 42)
@@ -58,4 +74,16 @@ class WaterLog extends HiveObject {
   });
 
   static DateTime dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
+
+  Map<String, dynamic> toJson() => {
+        'date': date.toIso8601String(),
+        'glassesConsumed': glassesConsumed,
+        'dailyGoalGlasses': dailyGoalGlasses,
+      };
+
+  factory WaterLog.fromJson(Map<String, dynamic> json) => WaterLog(
+        date: DateTime.parse(json['date'] as String),
+        glassesConsumed: json['glassesConsumed'] as int,
+        dailyGoalGlasses: json['dailyGoalGlasses'] as int,
+      );
 }
