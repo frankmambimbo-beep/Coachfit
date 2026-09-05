@@ -2,12 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'counter_factory.dart';
 
-/// Hand-placed reference joint positions (normalized 0..1 within a
-/// small demo box) marking the start and end of each exercise's
-/// motion. ExerciseDemoWidget animates smoothly between these two
-/// states on a loop to show correct form. Not derived from the live
-/// camera — this is illustrative reference data, separate from the
-/// real pose-tracking math in the counter classes.
 class DemoPoseSet {
   final Map<PoseLandmarkType, Offset> start;
   final Map<PoseLandmarkType, Offset> end;
@@ -16,7 +10,9 @@ class DemoPoseSet {
 
 const Map<TrackableExercise, DemoPoseSet> exerciseDemoPoses = {
   TrackableExercise.pushups: DemoPoseSet(
-    // Side-profile plank, arms extended.
+    // Side-profile plank, arms extended. Layout: shoulder(0.35) →
+    // hip(0.55) → knee(0.72) → ankle(0.88) — increasing x runs toward
+    // the feet.
     start: {
       PoseLandmarkType.leftShoulder: Offset(0.35, 0.25),
       PoseLandmarkType.rightShoulder: Offset(0.35, 0.22),
@@ -31,12 +27,14 @@ const Map<TrackableExercise, DemoPoseSet> exerciseDemoPoses = {
       PoseLandmarkType.leftAnkle: Offset(0.88, 0.35),
       PoseLandmarkType.rightAnkle: Offset(0.88, 0.32),
     },
-    // Chest lowered, elbows flared, wrists stay planted.
+    // FIXED: as the chest lowers, the elbow bends BACKWARD toward the
+    // feet (larger x, same direction as the hip) — not forward, away
+    // from the body. Wrist stays planted roughly under the shoulder.
     end: {
       PoseLandmarkType.leftShoulder: Offset(0.35, 0.45),
       PoseLandmarkType.rightShoulder: Offset(0.35, 0.42),
-      PoseLandmarkType.leftElbow: Offset(0.20, 0.50),
-      PoseLandmarkType.rightElbow: Offset(0.20, 0.47),
+      PoseLandmarkType.leftElbow: Offset(0.46, 0.50),
+      PoseLandmarkType.rightElbow: Offset(0.46, 0.47),
       PoseLandmarkType.leftWrist: Offset(0.35, 0.60),
       PoseLandmarkType.rightWrist: Offset(0.35, 0.57),
       PoseLandmarkType.leftHip: Offset(0.55, 0.48),
@@ -48,7 +46,6 @@ const Map<TrackableExercise, DemoPoseSet> exerciseDemoPoses = {
     },
   ),
   TrackableExercise.squats: DemoPoseSet(
-    // Standing tall.
     start: {
       PoseLandmarkType.leftShoulder: Offset(0.40, 0.15),
       PoseLandmarkType.rightShoulder: Offset(0.60, 0.15),
@@ -63,7 +60,6 @@ const Map<TrackableExercise, DemoPoseSet> exerciseDemoPoses = {
       PoseLandmarkType.leftAnkle: Offset(0.42, 0.85),
       PoseLandmarkType.rightAnkle: Offset(0.58, 0.85),
     },
-    // Squatting down, arms out for balance, knees bent.
     end: {
       PoseLandmarkType.leftShoulder: Offset(0.38, 0.30),
       PoseLandmarkType.rightShoulder: Offset(0.62, 0.30),
@@ -80,7 +76,6 @@ const Map<TrackableExercise, DemoPoseSet> exerciseDemoPoses = {
     },
   ),
   TrackableExercise.bicepCurls: DemoPoseSet(
-    // Arm extended down, standing relaxed.
     start: {
       PoseLandmarkType.leftShoulder: Offset(0.40, 0.20),
       PoseLandmarkType.rightShoulder: Offset(0.60, 0.20),
@@ -95,7 +90,6 @@ const Map<TrackableExercise, DemoPoseSet> exerciseDemoPoses = {
       PoseLandmarkType.leftAnkle: Offset(0.42, 0.88),
       PoseLandmarkType.rightAnkle: Offset(0.58, 0.88),
     },
-    // Forearm curled up toward the shoulder, elbow stays fixed.
     end: {
       PoseLandmarkType.leftShoulder: Offset(0.40, 0.20),
       PoseLandmarkType.rightShoulder: Offset(0.60, 0.20),
