@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +40,16 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
 
   Size? _latestImageSize;
   CameraLensDirection _lensDirection = CameraLensDirection.front;
+
+  // Rep-confirmation flash: briefly true right after a rep completes.
+  bool _showRepFlash = false;
+  Timer? _flashTimer;
+
+  // Out-of-frame detection: counts consecutive processed frames with
+  // no detected pose at all; past a threshold, shows a warning.
+  int _framesWithoutPose = 0;
+  static const int _outOfFrameThreshold = 8;
+  bool get _isOutOfFrame => _framesWithoutPose >= _outOfFrameThreshold;
 
   @override
   void initState() {
@@ -98,9 +109,17 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
         final inputImage = _toInputImage(image, camera);
         if (inputImage != null) {
           final poses = await _poseDetector!.processImage(inputImage);
-          if (poses.isNotEmpty && mounted) {
-            _counter.processPose(poses.first);
+
+          if (poses.isEmpty) {
+            _framesWithoutPose++;
+            if (mounted) setState(() {});
+          } else if (mounted) {
+            _framesWithoutPose = 0;
+
+            final completedRep = _counter.processPose(poses.first);
             _updateSmoothedPoints(poses.first);
+
+            if (completedRep) _triggerRepFlash();
 
             final rotationDegrees = camera.sensorOrientation;
             final swapDims = rotationDegrees == 90 || rotationDegrees == 270;
@@ -116,6 +135,14 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
       } finally {
         _isProcessingFrame = false;
       }
+    });
+  }
+
+  void _triggerRepFlash() {
+    _flashTimer?.cancel();
+    setState(() => _showRepFlash = true);
+    _flashTimer = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) setState(() => _showRepFlash = false);
     });
   }
 
@@ -182,6 +209,7 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
 
   @override
   void dispose() {
+    _flashTimer?.cancel();
     if (_streaming) _controller?.stopImageStream();
     _controller?.dispose();
     _poseDetector?.close();
@@ -215,11 +243,26 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
                           ),
                         ),
                       ),
+
+                    // Rep-confirmation flash — a brief green tint over
+                    // the whole preview the instant a rep is counted.
+                    if (_showRepFlash)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: AnimatedOpacity(
+                            opacity: _showRepFlash ? 1 : 0,
+                            duration: const Duration(milliseconds: 150),
+                            child: Container(color: AppColors.accentTertiary.withOpacity(0.25)),
+                          ),
+                        ),
+                      ),
+
                     Positioned(
                       top: AppSpacing.lg,
                       right: AppSpacing.md,
                       child: ExerciseDemoWidget(exercise: widget.exercise),
                     ),
+
                     Positioned(
                       top: AppSpacing.lg,
                       left: 0,
@@ -243,6 +286,65 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
                         ),
                       ),
                     ),
+
+                    // Calibration "hold position" overlay — shown
+                    // until the counter has locked in a stable
+                    // baseline. Blocks confusion about why reps aren't
+                    // counting in the first second or two.
+                    if (!_counter.isCalibrated && !_isOutOfFrame)
+                      Positioned(
+                        bottom: AppSpacing.xl + 70,
+                        left: AppSpacing.lg,
+                        right: AppSpacing.lg,
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Hold your starting position…',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: _counter.calibrationProgress,
+                                  backgroundColor: Colors.white24,
+                                  color: AppColors.accentTertiary,
+                                  minHeight: 6,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    // Out-of-frame warning — takes priority over the
+                    // calibration prompt since it explains why nothing
+                    // is being detected at all.
+                    if (_isOutOfFrame)
+                      Positioned(
+                        bottom: AppSpacing.xl + 70,
+                        left: AppSpacing.lg,
+                        right: AppSpacing.lg,
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: AppColors.danger.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                          child: const Text(
+                            'Step back into frame — full body not detected',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+
                     Positioned(
                       bottom: AppSpacing.xl,
                       left: AppSpacing.lg,
