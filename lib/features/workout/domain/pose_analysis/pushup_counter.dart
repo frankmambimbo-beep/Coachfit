@@ -74,14 +74,10 @@ class PushupCounter implements ExerciseCounter {
     return verticalGap / torsoLength;
   }
 
-  // FIXED: near a 90° bend, small body rotation makes one arm look
-  // more foreshortened to the camera than the other, so left/right
-  // elbow angles can diverge sharply — blindly averaging a good
-  // reading with a bad one produced a garbage middle value right at
-  // the most important point of the movement. Now: if both sides
-  // agree reasonably (within 30°), average them as before. If they
-  // disagree a lot, trust only whichever side has higher combined
-  // landmark confidence instead of blending in the unreliable one.
+  // Near a 90° bend, small body rotation can make one arm look more
+  // foreshortened than the other, causing left/right angles to
+  // diverge sharply. If they agree reasonably, average them; if not,
+  // trust only whichever side has higher landmark confidence.
   double? _bestElbowAngle(Pose pose) {
     final left = _elbowAngle(
       pose, PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist,
