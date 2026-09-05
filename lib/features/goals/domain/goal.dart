@@ -27,7 +27,6 @@ class Goal extends HiveObject {
   @HiveField(2)
   GoalCategory category;
 
-  // e.g. targetValue=5, unit="kg" for "lose 5kg"; targetValue=20, unit="workouts"
   @HiveField(3)
   double targetValue;
 
@@ -67,4 +66,30 @@ class Goal extends HiveObject {
 
   bool get isOverdue =>
       !completed && deadline != null && DateTime.now().isAfter(deadline!);
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'category': category.name,
+        'targetValue': targetValue,
+        'currentValue': currentValue,
+        'unit': unit,
+        'createdAt': createdAt.toIso8601String(),
+        'deadline': deadline?.toIso8601String(),
+        'completed': completed,
+        'xpReward': xpReward,
+      };
+
+  factory Goal.fromJson(Map<String, dynamic> json) => Goal(
+        id: json['id'] as String,
+        title: json['title'] as String,
+        category: GoalCategory.values.byName(json['category'] as String),
+        targetValue: (json['targetValue'] as num).toDouble(),
+        currentValue: (json['currentValue'] as num).toDouble(),
+        unit: json['unit'] as String,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        deadline: json['deadline'] != null ? DateTime.parse(json['deadline'] as String) : null,
+        completed: json['completed'] as bool,
+        xpReward: json['xpReward'] as int,
+      );
 }
