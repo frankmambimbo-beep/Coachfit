@@ -19,6 +19,7 @@ import '../../features/nutrition/presentation/add_nutrition_screen.dart';
 import '../../features/mood/presentation/mood_screen.dart';
 import '../../features/mood/presentation/log_mood_screen.dart';
 import '../../features/bodygoal/presentation/body_goal_screen.dart';
+import '../../features/backup/presentation/backup_screen.dart';
 import '../../features/stats/presentation/stats_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/profile/domain/user_profile.dart';
@@ -123,6 +124,10 @@ final appRouter = GoRouter(
             GoRoute(
               path: 'body-goal',
               builder: (context, state) => const BodyGoalScreen(fromOnboarding: false),
+            ),
+            GoRoute(
+              path: 'backup',
+              builder: (context, state) => const BackupScreen(),
             ),
           ],
         ),
