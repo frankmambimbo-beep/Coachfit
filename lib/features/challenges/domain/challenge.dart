@@ -14,9 +14,6 @@ enum ChallengeCategory {
   discipline,
 }
 
-// A challenge the user has actually joined. The catalog of available
-// challenges to join lives separately in challenge_templates.dart (plain
-// Dart, not Hive) — this class only represents an active/joined instance.
 @HiveType(typeId: 23)
 class Challenge extends HiveObject {
   @HiveField(0)
@@ -37,7 +34,6 @@ class Challenge extends HiveObject {
   @HiveField(5)
   DateTime startedAt;
 
-  // Each check-in day stored normalized to midnight, same pattern as Habit.
   @HiveField(6)
   List<DateTime> checkIns;
 
@@ -71,10 +67,34 @@ class Challenge extends HiveObject {
   double get progress =>
       durationDays <= 0 ? 0 : (daysCompleted / durationDays).clamp(0, 1).toDouble();
 
-  // The challenge expires if more calendar days have passed since it
-  // started than its duration allows, and it still isn't finished.
   bool get isExpired =>
       !completed &&
       DateTime.now().difference(startedAt).inDays >= durationDays &&
       daysCompleted < durationDays;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'templateId': templateId,
+        'title': title,
+        'category': category.name,
+        'durationDays': durationDays,
+        'startedAt': startedAt.toIso8601String(),
+        'checkIns': checkIns.map((d) => d.toIso8601String()).toList(),
+        'completed': completed,
+        'xpReward': xpReward,
+      };
+
+  factory Challenge.fromJson(Map<String, dynamic> json) => Challenge(
+        id: json['id'] as String,
+        templateId: json['templateId'] as String,
+        title: json['title'] as String,
+        category: ChallengeCategory.values.byName(json['category'] as String),
+        durationDays: json['durationDays'] as int,
+        startedAt: DateTime.parse(json['startedAt'] as String),
+        checkIns: (json['checkIns'] as List)
+            .map((d) => DateTime.parse(d as String))
+            .toList(),
+        completed: json['completed'] as bool,
+        xpReward: json['xpReward'] as int,
+      );
 }
