@@ -6,20 +6,37 @@ import '../data/habits_repository.dart';
 import '../domain/habit.dart';
 
 class AddHabitScreen extends ConsumerStatefulWidget {
-  const AddHabitScreen({super.key});
+  const AddHabitScreen({super.key, this.habitToEdit});
+
+  /// When provided, the form is pre-filled and saving updates this
+  /// habit instead of creating a new one.
+  final Habit? habitToEdit;
 
   @override
   ConsumerState<AddHabitScreen> createState() => _AddHabitScreenState();
 }
 
 class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
-  final _nameController = TextEditingController();
-  HabitCategory _category = HabitCategory.fitness;
-  HabitFrequency _frequency = HabitFrequency.daily;
-  final Set<int> _activeDays = {}; // Monday=1 ... Sunday=7
-  int _xpReward = 10;
+  late final TextEditingController _nameController;
+  late HabitCategory _category;
+  late HabitFrequency _frequency;
+  late final Set<int> _activeDays;
+  late int _xpReward;
+
+  bool get _isEditing => widget.habitToEdit != null;
 
   static const _dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.habitToEdit;
+    _nameController = TextEditingController(text: existing?.name ?? '');
+    _category = existing?.category ?? HabitCategory.fitness;
+    _frequency = existing?.frequency ?? HabitFrequency.daily;
+    _activeDays = Set.of(existing?.activeDays ?? []);
+    _xpReward = existing?.xpReward ?? 10;
+  }
 
   @override
   void dispose() {
@@ -39,13 +56,24 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
       return;
     }
 
-    ref.read(habitsRepositoryProvider.notifier).addHabit(
-          name: name,
-          category: _category,
-          frequency: _frequency,
-          activeDays: _activeDays.toList(),
-          xpReward: _xpReward,
-        );
+    if (_isEditing) {
+      ref.read(habitsRepositoryProvider.notifier).updateHabit(
+            id: widget.habitToEdit!.id,
+            name: name,
+            category: _category,
+            frequency: _frequency,
+            activeDays: _activeDays.toList(),
+            xpReward: _xpReward,
+          );
+    } else {
+      ref.read(habitsRepositoryProvider.notifier).addHabit(
+            name: name,
+            category: _category,
+            frequency: _frequency,
+            activeDays: _activeDays.toList(),
+            xpReward: _xpReward,
+          );
+    }
 
     context.pop();
   }
@@ -53,7 +81,7 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Habit')),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Habit' : 'New Habit')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -122,7 +150,10 @@ class _AddHabitScreenState extends ConsumerState<AddHabitScreen> {
             onChanged: (v) => setState(() => _xpReward = v.round()),
           ),
           const SizedBox(height: 32),
-          ElevatedButton(onPressed: _save, child: const Text('Save habit')),
+          ElevatedButton(
+            onPressed: _save,
+            child: Text(_isEditing ? 'Save changes' : 'Save habit'),
+          ),
         ],
       ),
     );
