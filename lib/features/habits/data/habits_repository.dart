@@ -7,8 +7,6 @@ import '../../profile/data/profile_repository.dart';
 
 const String habitsBoxName = 'habitsBox';
 
-// Any widget doing ref.watch(habitsRepositoryProvider) rebuilds
-// automatically whenever a habit is added, completed, or deleted.
 final habitsRepositoryProvider =
     StateNotifierProvider<HabitsRepository, List<Habit>>((ref) {
   return HabitsRepository(ref);
@@ -47,13 +45,36 @@ class HabitsRepository extends StateNotifier<List<Habit>> {
     state = _box.values.toList();
   }
 
+  // NEW: updates an existing habit's editable fields in place, keeping
+  // its id, streaks, and completion history untouched — this is the
+  // key difference from delete-and-re-add, which would lose all of
+  // that history.
+  Future<void> updateHabit({
+    required String id,
+    required String name,
+    required HabitCategory category,
+    required HabitFrequency frequency,
+    List<int> activeDays = const [],
+    int xpReward = 10,
+  }) async {
+    final habit = _box.get(id);
+    if (habit == null) return;
+
+    habit.name = name;
+    habit.category = category;
+    habit.frequency = frequency;
+    habit.activeDays = activeDays;
+    habit.xpReward = xpReward;
+
+    await habit.save();
+    state = _box.values.toList();
+  }
+
   Future<void> deleteHabit(String id) async {
     await _box.delete(id);
     state = _box.values.toList();
   }
 
-  // Toggles today's completion. Marking it done recalculates the streak
-  // and awards XP; un-marking (in case of a mis-tap) reverses both.
   Future<void> toggleCompletionToday(String id) async {
     final habit = _box.get(id);
     if (habit == null) return;
@@ -75,9 +96,6 @@ class HabitsRepository extends StateNotifier<List<Habit>> {
     state = _box.values.toList();
   }
 
-  // Walks backward day by day from today, counting an unbroken run of
-  // completions. Only counts days the habit was actually due, so a
-  // "Mon/Wed/Fri" habit isn't penalized for a Tuesday.
   void _recalculateStreak(Habit habit) {
     int streak = 0;
     DateTime cursor = Habit.dateOnly(DateTime.now());
@@ -97,7 +115,7 @@ class HabitsRepository extends StateNotifier<List<Habit>> {
       }
       cursor = cursor.subtract(const Duration(days: 1));
 
-      if (streak > 3650) break; // safety valve, never loop forever
+      if (streak > 3650) break;
     }
 
     habit.currentStreak = streak;
