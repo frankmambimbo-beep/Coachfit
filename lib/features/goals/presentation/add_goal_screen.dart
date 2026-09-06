@@ -7,19 +7,36 @@ import '../data/goals_repository.dart';
 import '../domain/goal.dart';
 
 class AddGoalScreen extends ConsumerStatefulWidget {
-  const AddGoalScreen({super.key});
+  const AddGoalScreen({super.key, this.goalToEdit});
+
+  final Goal? goalToEdit;
 
   @override
   ConsumerState<AddGoalScreen> createState() => _AddGoalScreenState();
 }
 
 class _AddGoalScreenState extends ConsumerState<AddGoalScreen> {
-  final _titleController = TextEditingController();
-  final _targetController = TextEditingController();
-  final _unitController = TextEditingController();
-  GoalCategory _category = GoalCategory.custom;
+  late final TextEditingController _titleController;
+  late final TextEditingController _targetController;
+  late final TextEditingController _unitController;
+  late GoalCategory _category;
   DateTime? _deadline;
-  int _xpReward = 50;
+  late int _xpReward;
+
+  bool get _isEditing => widget.goalToEdit != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.goalToEdit;
+    _titleController = TextEditingController(text: existing?.title ?? '');
+    _targetController = TextEditingController(
+        text: existing != null ? existing.targetValue.toString() : '');
+    _unitController = TextEditingController(text: existing?.unit ?? '');
+    _category = existing?.category ?? GoalCategory.custom;
+    _deadline = existing?.deadline;
+    _xpReward = existing?.xpReward ?? 50;
+  }
 
   @override
   void dispose() {
@@ -32,7 +49,7 @@ class _AddGoalScreenState extends ConsumerState<AddGoalScreen> {
   Future<void> _pickDeadline() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 30)),
+      initialDate: _deadline ?? DateTime.now().add(const Duration(days: 30)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
     );
@@ -52,14 +69,26 @@ class _AddGoalScreenState extends ConsumerState<AddGoalScreen> {
       return;
     }
 
-    ref.read(goalsRepositoryProvider.notifier).addGoal(
-          title: title,
-          category: _category,
-          targetValue: target,
-          unit: unit,
-          deadline: _deadline,
-          xpReward: _xpReward,
-        );
+    if (_isEditing) {
+      ref.read(goalsRepositoryProvider.notifier).updateGoal(
+            id: widget.goalToEdit!.id,
+            title: title,
+            category: _category,
+            targetValue: target,
+            unit: unit,
+            deadline: _deadline,
+            xpReward: _xpReward,
+          );
+    } else {
+      ref.read(goalsRepositoryProvider.notifier).addGoal(
+            title: title,
+            category: _category,
+            targetValue: target,
+            unit: unit,
+            deadline: _deadline,
+            xpReward: _xpReward,
+          );
+    }
 
     context.pop();
   }
@@ -67,7 +96,7 @@ class _AddGoalScreenState extends ConsumerState<AddGoalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Goal')),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Goal' : 'New Goal')),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
@@ -135,7 +164,10 @@ class _AddGoalScreenState extends ConsumerState<AddGoalScreen> {
             onChanged: (v) => setState(() => _xpReward = v.round()),
           ),
           const SizedBox(height: AppSpacing.xl),
-          ElevatedButton(onPressed: _save, child: const Text('Save goal')),
+          ElevatedButton(
+            onPressed: _save,
+            child: Text(_isEditing ? 'Save changes' : 'Save goal'),
+          ),
         ],
       ),
     );
