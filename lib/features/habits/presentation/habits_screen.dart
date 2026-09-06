@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../data/habits_repository.dart';
 import '../domain/habit.dart';
+import 'add_habit_screen.dart';
 
 class HabitsScreen extends ConsumerWidget {
   const HabitsScreen({super.key});
@@ -80,13 +81,15 @@ class _HabitTile extends ConsumerWidget {
     final done = habit.isCompletedToday;
 
     return GlassCard(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => AddHabitScreen(habitToEdit: habit)),
+      ),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: done
               ? AppColors.accentTertiary.withOpacity(0.2)
               : AppColors.accentPrimary.withOpacity(0.15),
-          child: Icon(icon,
-              color: done ? AppColors.accentTertiary : AppColors.accentPrimary),
+          child: Icon(icon, color: done ? AppColors.accentTertiary : AppColors.accentPrimary),
         ),
         title:
             Text(habit.name, style: const TextStyle(fontWeight: FontWeight.w600)),
