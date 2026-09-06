@@ -8,6 +8,7 @@ import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/progress_ring.dart';
 import '../data/goals_repository.dart';
 import '../domain/goal.dart';
+import 'add_goal_screen.dart';
 
 class GoalsScreen extends ConsumerWidget {
   const GoalsScreen({super.key});
@@ -135,57 +136,80 @@ class _GoalTile extends ConsumerWidget {
     );
   }
 
+  void _openEdit(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => AddGoalScreen(goalToEdit: goal)),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GlassCard(
-      onTap: goal.completed
-          ? null
-          : () => _showAddProgressDialog(context, ref),
-      child: Row(
+      // Tapping the card body now opens Edit (consistent with Habits).
+      // Adding progress moves to its own explicit button below, so the
+      // two actions don't compete for the same tap gesture.
+      onTap: () => _openEdit(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ProgressRing(
-            progress: goal.progress,
-            size: 56,
-            strokeWidth: 6,
-            gradient: goal.completed
-                ? const LinearGradient(
-                    colors: [AppColors.accentTertiary, AppColors.accentTertiary])
-                : AppColors.primaryGradient,
-            centerLabel: Icon(
-              goal.completed ? Icons.check : icon,
-              size: 20,
-              color: goal.completed ? AppColors.accentTertiary : AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(goal.title,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 2),
-                Text(
-                  goal.completed
-                      ? 'Completed 🎉'
-                      : '${goal.currentValue.toStringAsFixed(goal.currentValue == goal.currentValue.roundToDouble() ? 0 : 1)} / ${goal.targetValue.toStringAsFixed(goal.targetValue == goal.targetValue.roundToDouble() ? 0 : 1)} ${goal.unit}'
-                          '${goal.isOverdue ? '  ·  overdue' : ''}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: goal.isOverdue
-                            ? AppColors.danger
-                            : AppColors.textMuted,
-                      ),
+          Row(
+            children: [
+              ProgressRing(
+                progress: goal.progress,
+                size: 56,
+                strokeWidth: 6,
+                gradient: goal.completed
+                    ? const LinearGradient(
+                        colors: [AppColors.accentTertiary, AppColors.accentTertiary])
+                    : AppColors.primaryGradient,
+                centerLabel: Icon(
+                  goal.completed ? Icons.check : icon,
+                  size: 20,
+                  color: goal.completed ? AppColors.accentTertiary : AppColors.textPrimary,
                 ),
-              ],
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(goal.title,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(
+                      goal.completed
+                          ? 'Completed 🎉'
+                          : '${goal.currentValue.toStringAsFixed(goal.currentValue == goal.currentValue.roundToDouble() ? 0 : 1)} / ${goal.targetValue.toStringAsFixed(goal.targetValue == goal.targetValue.roundToDouble() ? 0 : 1)} ${goal.unit}'
+                              '${goal.isOverdue ? '  ·  overdue' : ''}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: goal.isOverdue
+                                ? AppColors.danger
+                                : AppColors.textMuted,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: AppColors.textMuted),
+                onPressed: () => _confirmDelete(context, ref),
+              ),
+            ],
+          ),
+          if (!goal.completed) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => _showAddProgressDialog(context, ref),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Add progress'),
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppColors.textMuted),
-            onPressed: () => _confirmDelete(context, ref),
-          ),
+          ],
         ],
       ),
     );
