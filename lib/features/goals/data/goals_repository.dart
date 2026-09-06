@@ -47,13 +47,46 @@ class GoalsRepository extends StateNotifier<List<Goal>> {
     state = _box.values.toList();
   }
 
+  // NEW: updates title/category/target/unit/deadline/xp in place.
+  // Deliberately does NOT touch currentValue or completed — editing
+  // the goal's definition shouldn't wipe out progress already logged
+  // toward it.
+  Future<void> updateGoal({
+    required String id,
+    required String title,
+    required GoalCategory category,
+    required double targetValue,
+    required String unit,
+    DateTime? deadline,
+    int xpReward = 50,
+  }) async {
+    final goal = _box.get(id);
+    if (goal == null) return;
+
+    goal.title = title;
+    goal.category = category;
+    goal.targetValue = targetValue;
+    goal.unit = unit;
+    goal.deadline = deadline;
+    goal.xpReward = xpReward;
+
+    // If editing the target down below what's already been logged,
+    // re-check completion status so it stays consistent.
+    final wasCompleted = goal.completed;
+    if (!wasCompleted && goal.currentValue >= goal.targetValue) {
+      goal.completed = true;
+      ref.read(profileRepositoryProvider.notifier).addXp(goal.xpReward);
+    }
+
+    await goal.save();
+    state = _box.values.toList();
+  }
+
   Future<void> deleteGoal(String id) async {
     await _box.delete(id);
     state = _box.values.toList();
   }
 
-  // Adds `delta` to the goal's progress (can be negative to correct a
-  // mis-tap). Awards XP exactly once, the moment it first hits target.
   Future<void> addProgress(String id, double delta) async {
     final goal = _box.get(id);
     if (goal == null) return;
@@ -65,7 +98,6 @@ class GoalsRepository extends StateNotifier<List<Goal>> {
       goal.completed = true;
       ref.read(profileRepositoryProvider.notifier).addXp(goal.xpReward);
     } else if (wasCompleted && goal.currentValue < goal.targetValue) {
-      // Reversed below target (e.g. accidental over-tap correction)
       goal.completed = false;
       ref.read(profileRepositoryProvider.notifier).addXp(-goal.xpReward);
     }
