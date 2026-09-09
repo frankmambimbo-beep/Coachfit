@@ -56,6 +56,14 @@ class Habit extends HiveObject {
   @HiveField(9)
   int xpReward;
 
+  // NEW: earns 1 freeze per 7-day streak milestone (capped), which can
+  // cover exactly one missed due-day without breaking the streak.
+  @HiveField(10)
+  int streakFreezesAvailable;
+
+  @HiveField(11)
+  List<DateTime> freezeUsedDates;
+
   Habit({
     required this.id,
     required this.name,
@@ -67,7 +75,10 @@ class Habit extends HiveObject {
     this.currentStreak = 0,
     this.longestStreak = 0,
     this.xpReward = 10,
-  }) : completions = completions ?? [];
+    this.streakFreezesAvailable = 0,
+    List<DateTime>? freezeUsedDates,
+  })  : completions = completions ?? [],
+        freezeUsedDates = freezeUsedDates ?? [];
 
   static DateTime dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
@@ -81,8 +92,6 @@ class Habit extends HiveObject {
     return activeDays.contains(DateTime.now().weekday);
   }
 
-  // Used by the backup/export feature to serialize this habit into
-  // plain JSON-compatible data.
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
@@ -94,6 +103,8 @@ class Habit extends HiveObject {
         'currentStreak': currentStreak,
         'longestStreak': longestStreak,
         'xpReward': xpReward,
+        'streakFreezesAvailable': streakFreezesAvailable,
+        'freezeUsedDates': freezeUsedDates.map((d) => d.toIso8601String()).toList(),
       };
 
   factory Habit.fromJson(Map<String, dynamic> json) => Habit(
@@ -109,5 +120,11 @@ class Habit extends HiveObject {
         currentStreak: json['currentStreak'] as int,
         longestStreak: json['longestStreak'] as int,
         xpReward: json['xpReward'] as int,
+        // Backup files made before this feature won't have these keys
+        // — default to 0/empty so old backups still restore cleanly.
+        streakFreezesAvailable: json['streakFreezesAvailable'] as int? ?? 0,
+        freezeUsedDates: json['freezeUsedDates'] != null
+            ? (json['freezeUsedDates'] as List).map((d) => DateTime.parse(d as String)).toList()
+            : [],
       );
 }
