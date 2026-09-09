@@ -5,14 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../profile/data/profile_repository.dart';
+import '../../exercises/domain/exercise_library.dart';
 import '../data/body_goal_repository.dart';
 import '../domain/body_type_goal.dart';
 import '../domain/body_type_catalog.dart';
 
-/// Shown once right after onboarding (mandatory first pick), and
-/// revisitable any time from the Profile tab to change the goal.
-/// [fromOnboarding] controls whether the button at the bottom says
-/// "Continue" (→ dashboard) or "Save" (→ back to Profile).
 class BodyGoalScreen extends ConsumerStatefulWidget {
   const BodyGoalScreen({super.key, this.fromOnboarding = false});
 
@@ -46,6 +44,8 @@ class _BodyGoalScreenState extends ConsumerState<BodyGoalScreen> {
   @override
   Widget build(BuildContext context) {
     final info = _selected != null ? bodyTypeCatalog[_selected!] : null;
+    final profile = ref.watch(profileRepositoryProvider);
+    final userEquipment = profile?.availableEquipment ?? const <String>[];
 
     return Scaffold(
       appBar: widget.fromOnboarding
@@ -119,20 +119,39 @@ class _BodyGoalScreenState extends ConsumerState<BodyGoalScreen> {
               GlassCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: info.recommendedExercises
-                      .map((e) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
+                  children: info.recommendedExercises.map((exerciseName) {
+                    final libraryEntry = findExercise(exerciseName);
+                    final available = libraryEntry == null ||
+                        libraryEntry.isAvailableWith(userEquipment);
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            available ? Icons.fitness_center : Icons.lock_outline,
+                            size: 16,
+                            color: available ? AppColors.accentTertiary : Colors.orange,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.fitness_center,
-                                    size: 16, color: AppColors.accentTertiary),
-                                const SizedBox(width: AppSpacing.sm),
-                                Expanded(child: Text(e)),
+                                Text(exerciseName),
+                                if (!available)
+                                  Text(
+                                    'Needs: ${libraryEntry!.requiredEquipment.join(' or ')}',
+                                    style: const TextStyle(fontSize: 11, color: Colors.orange),
+                                  ),
                               ],
                             ),
-                          ))
-                      .toList(),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
             ],
