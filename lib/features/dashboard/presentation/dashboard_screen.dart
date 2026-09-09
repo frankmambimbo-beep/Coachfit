@@ -85,11 +85,7 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             const _MoodSummaryCard(),
             const SizedBox(height: AppSpacing.md),
-            _SectionPlaceholder(
-              title: "Today's Workout",
-              subtitle: 'Structured workout plans arrive in a later phase',
-              icon: Icons.fitness_center_outlined,
-            ),
+            _TodayWorkoutCard(preferredDays: profile.preferredWorkoutDays),
           ],
         ),
       ),
@@ -368,7 +364,6 @@ class _WaterSummaryCard extends ConsumerWidget {
   }
 }
 
-/// Real "Mood Summary" card — replaces the Phase 1 placeholder.
 class _MoodSummaryCard extends ConsumerWidget {
   const _MoodSummaryCard();
 
@@ -422,28 +417,44 @@ class _MoodSummaryCard extends ConsumerWidget {
   }
 }
 
-class _SectionPlaceholder extends StatelessWidget {
-  const _SectionPlaceholder({required this.title, required this.subtitle, required this.icon});
-  final String title;
-  final String subtitle;
-  final IconData icon;
+/// Real "Today's Workout" card — replaces the flat placeholder.
+/// Reflects the workout days actually chosen during onboarding instead
+/// of ignoring that answer entirely.
+class _TodayWorkoutCard extends StatelessWidget {
+  const _TodayWorkoutCard({required this.preferredDays});
+
+  final List<int> preferredDays;
 
   @override
   Widget build(BuildContext context) {
+    final isWorkoutDay = preferredDays.contains(DateTime.now().weekday);
+
     return GlassCard(
+      onTap: () => context.go('/workout'),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.textMuted),
+          Icon(
+            isWorkoutDay ? Icons.fitness_center : Icons.self_improvement,
+            color: isWorkoutDay ? AppColors.accentPrimary : AppColors.textMuted,
+          ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-                Text(subtitle, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted)),
+                Text("Today's Workout",
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(
+                  isWorkoutDay
+                      ? "It's one of your workout days — let's get moving"
+                      : 'Rest day, based on your preferred schedule',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+                ),
               ],
             ),
           ),
+          const Icon(Icons.chevron_right, color: AppColors.textMuted),
         ],
       ),
     );
