@@ -1,7 +1,6 @@
 // GENERATED CODE - manually written to mirror what `hive_generator` would
 // normally produce, since this project builds from a phone and can't run
-// build_runner. If you ever get a machine with the Flutter SDK installed,
-// you can delete this and run the real code generator instead.
+// build_runner.
 
 part of 'habit.dart';
 
@@ -26,13 +25,18 @@ class HabitAdapter extends TypeAdapter<Habit> {
       currentStreak: fields[7] as int,
       longestStreak: fields[8] as int,
       xpReward: fields[9] as int,
+      // Habits saved before this update won't have fields 10/11 in
+      // their stored binary data — default to 0/empty so existing
+      // habits still load without crashing.
+      streakFreezesAvailable: fields[10] as int? ?? 0,
+      freezeUsedDates: (fields[11] as List?)?.cast<DateTime>() ?? [],
     );
   }
 
   @override
   void write(BinaryWriter writer, Habit obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -52,7 +56,11 @@ class HabitAdapter extends TypeAdapter<Habit> {
       ..writeByte(8)
       ..write(obj.longestStreak)
       ..writeByte(9)
-      ..write(obj.xpReward);
+      ..write(obj.xpReward)
+      ..writeByte(10)
+      ..write(obj.streakFreezesAvailable)
+      ..writeByte(11)
+      ..write(obj.freezeUsedDates);
   }
 }
 
