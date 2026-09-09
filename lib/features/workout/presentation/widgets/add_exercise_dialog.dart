@@ -8,11 +8,6 @@ import '../../../exercises/domain/exercise_library.dart';
 import '../../../exercises/domain/weight_recommendation.dart';
 import '../../domain/workout_session.dart';
 
-/// Exercise-entry dialog used by AddWorkoutScreen. Lets the person
-/// search the exercise library by name; picking a free-weight exercise
-/// auto-fills a suggested starting weight (editable) based on their
-/// fitness level and body weight. Bodyweight/cardio picks hide the
-/// weight field entirely since there's nothing to suggest.
 class AddExerciseDialog extends ConsumerStatefulWidget {
   const AddExerciseDialog({super.key});
 
@@ -75,7 +70,9 @@ class _AddExerciseDialogState extends ConsumerState<AddExerciseDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final showWeight = _selected?.needsWeight ?? true; // default to showing until a pick clarifies it
+    final showWeight = _selected?.needsWeight ?? true;
+    final profile = ref.watch(profileRepositoryProvider);
+    final userEquipment = profile?.availableEquipment ?? const <String>[];
 
     return AlertDialog(
       title: const Text('Add exercise'),
@@ -91,9 +88,39 @@ class _AddExerciseDialogState extends ConsumerState<AddExerciseDialog> {
                     e.name.toLowerCase().contains(textValue.text.toLowerCase()));
               },
               onSelected: _onExerciseSelected,
+              optionsViewBuilder: (context, onSelected, options) {
+                final list = options.toList();
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4,
+                    child: SizedBox(
+                      width: 280,
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: list.length,
+                        itemBuilder: (context, index) {
+                          final exercise = list[index];
+                          final available = exercise.isAvailableWith(userEquipment);
+                          return ListTile(
+                            dense: true,
+                            title: Text(exercise.name),
+                            subtitle: available
+                                ? null
+                                : Text(
+                                    'Needs: ${exercise.requiredEquipment.join(' or ')}',
+                                    style: const TextStyle(fontSize: 11, color: Colors.orange),
+                                  ),
+                            onTap: () => onSelected(exercise),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
               fieldViewBuilder: (context, controller, focusNode, onSubmit) {
-                // Keep our own controller in sync so free-typed names
-                // (not in the library) still work when saving.
                 controller.addListener(() {
                   _nameController.text = controller.text;
                 });
@@ -107,6 +134,14 @@ class _AddExerciseDialogState extends ConsumerState<AddExerciseDialog> {
                 );
               },
             ),
+            if (_selected != null && !_selected!.isAvailableWith(userEquipment))
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'You didn\'t list ${_selected!.requiredEquipment.join('/')} in your profile — you can still log it if you have access today.',
+                  style: const TextStyle(fontSize: 11, color: Colors.orange),
+                ),
+              ),
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
