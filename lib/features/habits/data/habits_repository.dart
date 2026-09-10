@@ -6,6 +6,7 @@ import '../domain/habit.dart';
 import '../../profile/data/profile_repository.dart';
 
 const String habitsBoxName = 'habitsBox';
+const int _maxStreakFreezes = 3;
 
 final habitsRepositoryProvider =
     StateNotifierProvider<HabitsRepository, List<Habit>>((ref) {
@@ -45,10 +46,6 @@ class HabitsRepository extends StateNotifier<List<Habit>> {
     state = _box.values.toList();
   }
 
-  // NEW: updates an existing habit's editable fields in place, keeping
-  // its id, streaks, and completion history untouched — this is the
-  // key difference from delete-and-re-add, which would lose all of
-  // that history.
   Future<void> updateHabit({
     required String id,
     required String name,
@@ -96,6 +93,28 @@ class HabitsRepository extends StateNotifier<List<Habit>> {
     state = _box.values.toList();
   }
 
+  // Manually spends one freeze to cover a specific missed due-date,
+  // preventing that gap from breaking the streak on next recalculation.
+  Future<bool> useStreakFreeze(String id, DateTime missedDate) async {
+    final habit = _box.get(id);
+    if (habit == null || habit.streakFreezesAvailable <= 0) return false;
+
+    final normalized = Habit.dateOnly(missedDate);
+    if (habit.freezeUsedDates.any((d) => Habit.dateOnly(d) == normalized)) {
+      return false; // already used on this date
+    }
+
+    habit.freezeUsedDates.add(normalized);
+    habit.streakFreezesAvailable--;
+    _recalculateStreak(habit);
+    await habit.save();
+    state = _box.values.toList();
+    return true;
+  }
+
+  // Streak calculation now treats a freeze-covered missed day the same
+  // as a completed day, so the streak continues through it instead of
+  // resetting to 0.
   void _recalculateStreak(Habit habit) {
     int streak = 0;
     DateTime cursor = Habit.dateOnly(DateTime.now());
@@ -105,9 +124,10 @@ class HabitsRepository extends StateNotifier<List<Habit>> {
           habit.activeDays.contains(cursor.weekday);
 
       if (isDue) {
-        final done =
-            habit.completions.any((d) => Habit.dateOnly(d) == cursor);
-        if (done) {
+        final done = habit.completions.any((d) => Habit.dateOnly(d) == cursor);
+        final frozen = habit.freezeUsedDates.any((d) => Habit.dateOnly(d) == cursor);
+
+        if (done || frozen) {
           streak++;
         } else {
           break;
@@ -121,6 +141,14 @@ class HabitsRepository extends StateNotifier<List<Habit>> {
     habit.currentStreak = streak;
     if (streak > habit.longestStreak) {
       habit.longestStreak = streak;
+    }
+
+    // Earn 1 freeze for every 7-day streak milestone reached, capped
+    // so freezes don't accumulate indefinitely on a very long streak.
+    final earnedFreezes = (streak / 7).floor();
+    if (earnedFreezes > 0 && habit.streakFreezesAvailable < _maxStreakFreezes) {
+      habit.streakFreezesAvailable =
+          (habit.streakFreezesAvailable + 1).clamp(0, _maxStreakFreezes);
     }
   }
 
