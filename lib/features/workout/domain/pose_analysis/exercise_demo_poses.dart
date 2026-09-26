@@ -10,9 +10,6 @@ class DemoPoseSet {
 
 const Map<TrackableExercise, DemoPoseSet> exerciseDemoPoses = {
   TrackableExercise.pushups: DemoPoseSet(
-    // Side-profile plank, arms extended. Layout: shoulder(0.35) →
-    // hip(0.55) → knee(0.72) → ankle(0.88) — increasing x runs toward
-    // the feet.
     start: {
       PoseLandmarkType.leftShoulder: Offset(0.35, 0.25),
       PoseLandmarkType.rightShoulder: Offset(0.35, 0.22),
@@ -27,9 +24,6 @@ const Map<TrackableExercise, DemoPoseSet> exerciseDemoPoses = {
       PoseLandmarkType.leftAnkle: Offset(0.88, 0.35),
       PoseLandmarkType.rightAnkle: Offset(0.88, 0.32),
     },
-    // FIXED: as the chest lowers, the elbow bends BACKWARD toward the
-    // feet (larger x, same direction as the hip) — not forward, away
-    // from the body. Wrist stays planted roughly under the shoulder.
     end: {
       PoseLandmarkType.leftShoulder: Offset(0.35, 0.45),
       PoseLandmarkType.rightShoulder: Offset(0.35, 0.42),
@@ -103,6 +97,38 @@ const Map<TrackableExercise, DemoPoseSet> exerciseDemoPoses = {
       PoseLandmarkType.rightKnee: Offset(0.58, 0.72),
       PoseLandmarkType.leftAnkle: Offset(0.42, 0.88),
       PoseLandmarkType.rightAnkle: Offset(0.58, 0.88),
+    },
+  ),
+  // Plank is a HELD position — start/end are nearly identical, with
+  // just a very subtle wobble so the loop doesn't look frozen/broken.
+  TrackableExercise.plank: DemoPoseSet(
+    start: {
+      PoseLandmarkType.leftShoulder: Offset(0.30, 0.35),
+      PoseLandmarkType.rightShoulder: Offset(0.30, 0.32),
+      PoseLandmarkType.leftElbow: Offset(0.30, 0.50),
+      PoseLandmarkType.rightElbow: Offset(0.30, 0.47),
+      PoseLandmarkType.leftWrist: Offset(0.30, 0.62),
+      PoseLandmarkType.rightWrist: Offset(0.30, 0.59),
+      PoseLandmarkType.leftHip: Offset(0.55, 0.38),
+      PoseLandmarkType.rightHip: Offset(0.55, 0.35),
+      PoseLandmarkType.leftKnee: Offset(0.72, 0.40),
+      PoseLandmarkType.rightKnee: Offset(0.72, 0.37),
+      PoseLandmarkType.leftAnkle: Offset(0.88, 0.42),
+      PoseLandmarkType.rightAnkle: Offset(0.88, 0.39),
+    },
+    end: {
+      PoseLandmarkType.leftShoulder: Offset(0.30, 0.36),
+      PoseLandmarkType.rightShoulder: Offset(0.30, 0.33),
+      PoseLandmarkType.leftElbow: Offset(0.30, 0.51),
+      PoseLandmarkType.rightElbow: Offset(0.30, 0.48),
+      PoseLandmarkType.leftWrist: Offset(0.30, 0.62),
+      PoseLandmarkType.rightWrist: Offset(0.30, 0.59),
+      PoseLandmarkType.leftHip: Offset(0.55, 0.37),
+      PoseLandmarkType.rightHip: Offset(0.55, 0.34),
+      PoseLandmarkType.leftKnee: Offset(0.72, 0.40),
+      PoseLandmarkType.rightKnee: Offset(0.72, 0.37),
+      PoseLandmarkType.leftAnkle: Offset(0.88, 0.42),
+      PoseLandmarkType.rightAnkle: Offset(0.88, 0.39),
     },
   ),
 };
