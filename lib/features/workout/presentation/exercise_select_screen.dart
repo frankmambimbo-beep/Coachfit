@@ -6,10 +6,6 @@ import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../domain/pose_analysis/counter_factory.dart';
 
-/// Lets the person pick exactly ONE exercise before the camera opens.
-/// The chosen exercise is passed through as route `extra`, so
-/// ExerciseCameraScreen creates one dedicated counter for that exercise
-/// only — there's no way to end up tracking two exercises at once.
 class ExerciseSelectScreen extends StatelessWidget {
   const ExerciseSelectScreen({super.key});
 
@@ -21,6 +17,8 @@ class ExerciseSelectScreen extends StatelessWidget {
         return Icons.airline_seat_legroom_extra;
       case TrackableExercise.bicepCurls:
         return Icons.sports_gymnastics;
+      case TrackableExercise.plank:
+        return Icons.timer_outlined;
     }
   }
 
