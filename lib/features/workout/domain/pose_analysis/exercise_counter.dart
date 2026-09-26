@@ -6,6 +6,12 @@ abstract class ExerciseCounter {
   bool get isCalibrated;
   double get calibrationProgress;
 
+  /// True for hold-duration exercises (like Plank), where `reps`
+  /// represents seconds held rather than a rep count. The camera
+  /// screen uses this to decide whether to show a rep number or a
+  /// mm:ss timer.
+  bool get isHoldBased => false;
+
   bool processPose(Pose pose);
   void reset();
 }
