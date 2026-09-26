@@ -41,12 +41,9 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
   Size? _latestImageSize;
   CameraLensDirection _lensDirection = CameraLensDirection.front;
 
-  // Rep-confirmation flash: briefly true right after a rep completes.
   bool _showRepFlash = false;
   Timer? _flashTimer;
 
-  // Out-of-frame detection: counts consecutive processed frames with
-  // no detected pose at all; past a threshold, shows a warning.
   int _framesWithoutPose = 0;
   static const int _outOfFrameThreshold = 8;
   bool get _isOutOfFrame => _framesWithoutPose >= _outOfFrameThreshold;
@@ -187,6 +184,20 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
     return allBytes.done().buffer.asUint8List();
   }
 
+  String _formattedCount() {
+    if (!_counter.isHoldBased) return '${_counter.reps}';
+    final minutes = _counter.reps ~/ 60;
+    final seconds = _counter.reps % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  String _finishButtonLabel() {
+    if (_counter.isHoldBased) {
+      return 'Finish (${_formattedCount()} held)';
+    }
+    return 'Finish Set (${_counter.reps} reps)';
+  }
+
   Future<void> _finishSet() async {
     if (_controller != null && _streaming) {
       await _controller!.stopImageStream();
@@ -194,12 +205,21 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
     }
 
     if (_counter.reps > 0) {
+      // For hold-based exercises, "reps" is repurposed as seconds held
+      // — logged as 1 set with duration recorded via the session's
+      // durationMinutes-equivalent isn't quite right, so we store the
+      // held seconds directly in the reps field and note it's a hold
+      // in the exercise name for clarity in history.
+      final displayName = _counter.isHoldBased
+          ? '${_counter.exerciseName} (${_formattedCount()} held)'
+          : _counter.exerciseName;
+
       await ref.read(workoutRepositoryProvider.notifier).addSession(
         title: '${_counter.exerciseName} Set',
         type: WorkoutType.strength,
         date: DateTime.now(),
         exercises: [
-          ExerciseEntry(name: _counter.exerciseName, sets: 1, reps: _counter.reps),
+          ExerciseEntry(name: displayName, sets: 1, reps: _counter.reps),
         ],
       );
     }
@@ -243,9 +263,6 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
                           ),
                         ),
                       ),
-
-                    // Rep-confirmation flash — a brief green tint over
-                    // the whole preview the instant a rep is counted.
                     if (_showRepFlash)
                       Positioned.fill(
                         child: IgnorePointer(
@@ -256,13 +273,11 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
                           ),
                         ),
                       ),
-
                     Positioned(
                       top: AppSpacing.lg,
                       right: AppSpacing.md,
                       child: ExerciseDemoWidget(exercise: widget.exercise),
                     ),
-
                     Positioned(
                       top: AppSpacing.lg,
                       left: 0,
@@ -276,7 +291,7 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
                             borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                           child: Text(
-                            '${_counter.reps}',
+                            _formattedCount(),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 48,
@@ -286,11 +301,6 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
                         ),
                       ),
                     ),
-
-                    // Calibration "hold position" overlay — shown
-                    // until the counter has locked in a stable
-                    // baseline. Blocks confusion about why reps aren't
-                    // counting in the first second or two.
                     if (!_counter.isCalibrated && !_isOutOfFrame)
                       Positioned(
                         bottom: AppSpacing.xl + 70,
@@ -304,9 +314,11 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
                           ),
                           child: Column(
                             children: [
-                              const Text(
-                                'Hold your starting position…',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                              Text(
+                                _counter.isHoldBased
+                                    ? 'Get into position…'
+                                    : 'Hold your starting position…',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                               ),
                               const SizedBox(height: AppSpacing.sm),
                               ClipRRect(
@@ -322,10 +334,6 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
                           ),
                         ),
                       ),
-
-                    // Out-of-frame warning — takes priority over the
-                    // calibration prompt since it explains why nothing
-                    // is being detected at all.
                     if (_isOutOfFrame)
                       Positioned(
                         bottom: AppSpacing.xl + 70,
@@ -344,7 +352,6 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
                           ),
                         ),
                       ),
-
                     Positioned(
                       bottom: AppSpacing.xl,
                       left: AppSpacing.lg,
@@ -355,7 +362,7 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
                           padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                         ),
                         onPressed: _finishSet,
-                        child: Text('Finish Set (${_counter.reps} reps)'),
+                        child: Text(_finishButtonLabel()),
                       ),
                     ),
                   ],
