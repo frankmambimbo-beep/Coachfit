@@ -8,6 +8,8 @@ class PushupCounter implements ExerciseCounter {
   int reps = 0;
   @override
   String get exerciseName => 'Push-ups';
+  @override
+  bool get isHoldBased => false;
 
   final _torsoTracker = RepStateTracker(downThresholdRatio: 0.75, upThresholdRatio: 0.90);
   final _elbowTracker = RepStateTracker(downThresholdRatio: 0.75, upThresholdRatio: 0.90);
@@ -74,10 +76,6 @@ class PushupCounter implements ExerciseCounter {
     return verticalGap / torsoLength;
   }
 
-  // Near a 90° bend, small body rotation can make one arm look more
-  // foreshortened than the other, causing left/right angles to
-  // diverge sharply. If they agree reasonably, average them; if not,
-  // trust only whichever side has higher landmark confidence.
   double? _bestElbowAngle(Pose pose) {
     final left = _elbowAngle(
       pose, PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist,
