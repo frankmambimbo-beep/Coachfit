@@ -8,6 +8,8 @@ class SquatCounter implements ExerciseCounter {
   int reps = 0;
   @override
   String get exerciseName => 'Squats';
+  @override
+  bool get isHoldBased => false;
 
   final _tracker = RepStateTracker(downThresholdRatio: 0.65, upThresholdRatio: 0.90);
 
