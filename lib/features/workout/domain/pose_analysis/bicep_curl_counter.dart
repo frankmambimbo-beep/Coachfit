@@ -8,6 +8,8 @@ class BicepCurlCounter implements ExerciseCounter {
   int reps = 0;
   @override
   String get exerciseName => 'Bicep Curls';
+  @override
+  bool get isHoldBased => false;
 
   final _tracker = RepStateTracker(downThresholdRatio: 0.55, upThresholdRatio: 0.85);
 
