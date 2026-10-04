@@ -1,5 +1,6 @@
 class SmoothedValue {
   SmoothedValue({this.alpha = 0.3});
+
   final double alpha;
   double? _value;
 
@@ -11,15 +12,15 @@ class SmoothedValue {
   void reset() => _value = null;
 }
 
-/// Shared rep-detection state machine with a calibration warm-up: a
-/// short "hold position" phase collects several frames and averages
-/// them into a stable baseline, rather than trusting a single
-/// possibly-noisy first frame.
 class RepStateTracker {
   RepStateTracker({
     required this.downThresholdRatio,
     required this.upThresholdRatio,
-    this.requiredConsecutiveFrames = 3,
+    // Reduced from 3 to 2: the EMA smoothing above already filters
+    // most frame-to-frame noise before this check runs, so requiring
+    // 3 consecutive confirmations on top of that was over-cautious —
+    // it made fast reps impossible to register in time.
+    this.requiredConsecutiveFrames = 2,
     this.calibrationFrames = 12,
     double smoothingAlpha = 0.3,
   }) : _smoother = SmoothedValue(alpha: smoothingAlpha);
