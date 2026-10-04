@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
@@ -51,6 +52,13 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
   void initState() {
     super.initState();
     _counter = createCounterFor(widget.exercise);
+    // Locks the screen to portrait while tracking is active. Without
+    // this, rotating the phone rotates the whole camera frame — and
+    // since position checks (like Plank's "is the body horizontal?")
+    // are measured relative to the frame, not real-world gravity, a
+    // rotated frame can make standing look like lying down to the
+    // math. Locking orientation closes that off entirely.
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     _setup();
   }
 
@@ -94,11 +102,6 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
     _streaming = true;
 
     await _controller!.startImageStream((CameraImage image) async {
-      // This busy-check is now the ONLY throttle — it naturally caps
-      // processing at whatever rate the phone can actually keep up
-      // with, instead of an artificial fixed "every 2nd frame" skip
-      // that was discarding usable frames even on phones fast enough
-      // to use them, which is what made quick reps under-count.
       if (_isProcessingFrame) return;
       _isProcessingFrame = true;
 
@@ -228,6 +231,10 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
     if (_streaming) _controller?.stopImageStream();
     _controller?.dispose();
     _poseDetector?.close();
+    // Restores all orientations so the rest of the app (which doesn't
+    // lock orientation) isn't stuck in portrait-only after leaving
+    // this screen.
+    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     super.dispose();
   }
 
