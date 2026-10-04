@@ -33,7 +33,6 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
   String? _error;
   bool _isProcessingFrame = false;
   bool _streaming = false;
-  int _frameSkipCounter = 0;
 
   final Map<PoseLandmarkType, Offset> _smoothedPoints = {};
   static const double _pointSmoothingAlpha = 0.2;
@@ -95,11 +94,12 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
     _streaming = true;
 
     await _controller!.startImageStream((CameraImage image) async {
+      // This busy-check is now the ONLY throttle — it naturally caps
+      // processing at whatever rate the phone can actually keep up
+      // with, instead of an artificial fixed "every 2nd frame" skip
+      // that was discarding usable frames even on phones fast enough
+      // to use them, which is what made quick reps under-count.
       if (_isProcessingFrame) return;
-
-      _frameSkipCounter++;
-      if (_frameSkipCounter % 2 != 0) return;
-
       _isProcessingFrame = true;
 
       try {
@@ -205,11 +205,6 @@ class _ExerciseCameraScreenState extends ConsumerState<ExerciseCameraScreen> {
     }
 
     if (_counter.reps > 0) {
-      // For hold-based exercises, "reps" is repurposed as seconds held
-      // — logged as 1 set with duration recorded via the session's
-      // durationMinutes-equivalent isn't quite right, so we store the
-      // held seconds directly in the reps field and note it's a hold
-      // in the exercise name for clarity in history.
       final displayName = _counter.isHoldBased
           ? '${_counter.exerciseName} (${_formattedCount()} held)'
           : _counter.exerciseName;
